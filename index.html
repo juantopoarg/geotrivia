@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4FB52A">
+<meta name="description" content="GeoTrivia: trivia de geografía con 4 opciones, logros y colección.">
+<title>GeoTrivia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#4FB52A; --bg-d1:#3E8E21; --bg-d2:#2F6C19;
+  --ink:#2B2A33; --ink2:#6B6878;
+  --yellow:#FFD43B; --yellow-b:#D9A800;
+  --pink:#FF5FA2; --pink-b:#D63D80;
+  --violet:#7C4DFF; --violet-b:#5A33CC;
+  --ok:#22C55E; --ok-bg:#E3FAEA; --ok-b:#16A34A;
+  --bad:#FF4D5E; --bad-bg:#FFE5E8; --bad-b:#E11D48;
+  --orange:#FF7A2F; --blue:#3D7BFF;
+  --f-title:"Baloo 2",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-text:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --hard:0 3px 0 rgba(0,0,0,.22);
+  --edge:6px solid rgba(0,0,0,.2);
+  --light:#F4F3F8; --light-b:#D9D7E3;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background-color:var(--bg);
+  background-image:radial-gradient(rgba(255,255,255,.14) 2px,transparent 2.6px);
+  background-size:28px 28px;
+  transition:background-color .4s;
+  font-family:var(--f-text);font-weight:800;color:#fff;text-shadow:var(--hard);
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;color:inherit}
+#app{
+  position:relative;max-width:560px;margin:0 auto;height:100vh;height:100dvh;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+  display:flex;flex-direction:column;
+}
+.screen{display:none;flex:1;min-height:0;flex-direction:column;gap:10px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;animation:fadeUp .3s ease both}
+.screen::-webkit-scrollbar{display:none}
+.screen.on{display:flex}
+
+/* ---------- componentes ---------- */
+.card{background:#fff;color:var(--ink);border-radius:22px;border-bottom:var(--edge);padding:14px}
+.card,.card *,.opt,.opt *,.chip,.score,.fb,.fb *,.tag,.btn.go,.ac,.ac *,.toast,.toast *,.cell,.cell *{text-shadow:none}
+.btn{
+  flex:1;min-height:54px;border:0;border-radius:18px;border-bottom:var(--edge);
+  font:800 18px var(--f-title);text-transform:uppercase;letter-spacing:.03em;color:#fff;text-shadow:var(--hard);
+  display:flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;cursor:pointer;
+  transition:transform .08s,border-bottom-width .08s,opacity .2s;
+}
+.btn:active{transform:translateY(4px);border-bottom-width:2px}
+.btn.play{background:var(--pink);min-height:64px;font-size:28px}
+.btn.go{background:var(--yellow);color:var(--ink)}
+.btn.ghost{background:rgba(255,255,255,.22)}
+.btn.violet{background:var(--violet)}
+.btn:disabled{opacity:.45;pointer-events:none}
+.ib{
+  position:relative;width:44px;height:44px;flex:none;border:0;border-radius:14px;background:rgba(255,255,255,.22);
+  border-bottom:4px solid rgba(0,0,0,.15);font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;text-shadow:none;
+}
+.ib:active{transform:translateY(2px);border-bottom-width:2px}
+.dot{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font:800 11px/18px var(--f-title);text-align:center;border:2px solid #fff}
+.dot[hidden]{display:none}
+.langsw{display:flex;padding:3px;border-radius:999px;background:rgba(0,0,0,.22);gap:2px}
+.langsw button{min-width:44px;min-height:38px;border:0;border-radius:999px;background:transparent;font:800 14px var(--f-title);letter-spacing:.04em;cursor:pointer;text-shadow:none}
+.langsw button.on{background:#fff;color:var(--ink)}
+.chips{display:flex;gap:8px}
+.chip{
+  flex:1;min-height:44px;padding:0 6px;border:0;border-radius:999px;background:var(--light);border-bottom:4px solid var(--light-b);
+  font:800 17px var(--f-title);color:var(--ink);cursor:pointer;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;
+}
+.chip:active{transform:translateY(2px);border-bottom-width:2px}
+.chip.on{background:var(--yellow);border-bottom-color:var(--yellow-b)}
+.chip.lock{opacity:.6}
+.row2{display:flex;gap:8px;margin-top:8px}
+.chip.sm{font-size:14px;letter-spacing:.02em;padding:0 8px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.chip.timeron{background:var(--violet);border-bottom-color:var(--violet-b);color:#fff}
+.foot{display:flex;gap:10px;margin-top:auto;padding-top:4px;flex:none}
+
+/* ---------- inicio ---------- */
+.top{display:flex;align-items:center;gap:10px;flex:none}
+.hero{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+.globe{font-size:clamp(40px,12vw,64px);line-height:1;animation:bob 2.4s ease-in-out infinite}
+.logo{margin:0;font-family:var(--f-title);font-weight:800;line-height:.92;text-transform:uppercase;font-size:clamp(54px,18vw,84px)}
+.logo .a{display:block;font-size:.62em;letter-spacing:.08em}
+.logo .b{display:inline-block;color:var(--yellow);transform:rotate(-3deg);text-shadow:0 5px 0 rgba(0,0,0,.28)}
+.sub{margin:0;font-size:clamp(14px,4vw,18px)}
+.player{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.22);border-radius:999px;padding:4px 14px 4px 6px;cursor:pointer;border:0;color:#fff;font:800 15px var(--f-title)}
+.player .av{width:32px;height:32px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:19px;text-shadow:none}
+.player .xp{width:64px;height:8px;border-radius:999px;background:rgba(0,0,0,.28);overflow:hidden}
+.player .xp i{display:block;height:100%;background:var(--yellow);width:0}
+.nextach{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.22);border-radius:999px;padding:4px 12px;font:800 13px var(--f-title);max-width:100%;border:0;color:#fff;cursor:pointer}
+.nextach[hidden]{display:none}
+.nextach .pb{width:56px;height:8px;border-radius:999px;background:rgba(0,0,0,.28);overflow:hidden;flex:none}
+.nextach .pb i{display:block;height:100%;background:var(--yellow);width:0}
+.card h3{margin:0 0 8px;font:800 18px var(--f-title)}
+.hint{margin-top:8px;display:flex;justify-content:space-between;gap:8px;font:800 14px var(--f-text);color:var(--ink2)}
+.topicrow{display:flex;gap:6px;margin-top:8px}
+.topicrow .chip{font-size:20px;padding:0;min-width:0}
+.topicrow[hidden]{display:none}
+
+/* ---------- juego ---------- */
+.progress{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.bar{flex:1;height:16px;border-radius:999px;background:rgba(0,0,0,.25);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--yellow);border-radius:999px;transition:width .35s}
+.score{background:#fff;color:var(--ink);border-radius:999px;padding:5px 12px;font:800 16px var(--f-title);min-width:72px;text-align:center;border-bottom:3px solid rgba(0,0,0,.2)}
+.score.bump{animation:pop .35s}
+.qcard{padding:12px 14px;flex:none}
+.qcard.in{animation:cardIn .35s cubic-bezier(.3,1.4,.5,1)}
+.tbar{position:relative;height:16px;border-radius:999px;background:#ECEAF3;overflow:hidden;margin-bottom:8px}
+.tbar[hidden]{display:none}
+.tbar i{display:block;height:100%;width:100%;background:var(--ok);border-radius:999px;transition:width .1s linear,background-color .3s}
+.tbar.mid i{background:var(--yellow)}
+.tbar.low i{background:var(--bad)}
+.tbar span{position:absolute;inset:0;display:grid;place-items:center;font:800 11px var(--f-title);color:var(--ink)}
+.qhead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.tag{background:var(--bg);color:#fff;border-radius:999px;padding:3px 12px;font:800 12px var(--f-title);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;transition:background-color .4s}
+.streak{font:800 14px var(--f-title);color:var(--orange);white-space:nowrap}
+.cnt{margin-left:auto;font:800 14px var(--f-title);color:var(--ink2);white-space:nowrap}
+.q{font:800 clamp(18px,5.2vw,26px)/1.15 var(--f-title);color:var(--ink)}
+.q b{color:var(--bg-d1)}
+.q b.no{background:var(--bad);color:#fff;padding:0 8px;border-radius:8px}
+.fb{display:none;margin-top:8px;border-radius:14px;padding:8px 10px;font:700 14px/1.25 var(--f-text)}
+.fb.show{display:block;animation:pop .3s}
+.fb.good{background:var(--ok-bg);color:#166534;border-bottom:3px solid var(--ok-b)}
+.fb.bad{background:var(--bad-bg);color:#9F1239;border-bottom:3px solid var(--bad-b)}
+.fb .t{font:800 17px var(--f-title)}
+.opts{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+.opt{
+  flex:1 1 0;min-height:48px;max-height:84px;display:flex;align-items:center;gap:10px;padding:0 12px;
+  border:0;border-radius:18px;background:var(--light);border-bottom:6px solid var(--light-b);
+  color:var(--ink);font:800 clamp(16px,4.8vw,21px)/1.05 var(--f-title);text-align:left;cursor:pointer;
+  transition:transform .08s,border-bottom-width .08s,opacity .25s,background-color .2s;
+}
+.opt:active{transform:translateY(4px);border-bottom-width:2px}
+.opt.lock{pointer-events:none}
+.opt.gone{opacity:.22;filter:grayscale(1)}
+.ltr{width:32px;height:32px;flex:none;border-radius:50%;background:#fff;border:3px solid var(--light-b);display:grid;place-items:center;font:800 15px var(--f-title);color:var(--ink2)}
+.lab{flex:1;min-width:0}
+.mk{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:17px;color:#fff;opacity:0}
+.opt.good{background:var(--ok-bg);border-bottom-color:var(--ok-b)}
+.opt.good .ltr{background:var(--ok);border-color:var(--ok-b);color:#fff}
+.opt.good .mk{background:var(--ok);opacity:1;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.opt.bad{background:var(--bad-bg);border-bottom-color:var(--bad-b);animation:shake .45s}
+.opt.bad .ltr{background:var(--bad);border-color:var(--bad-b);color:#fff}
+.opt.bad .mk{background:var(--bad);opacity:1;animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.opt.dim{opacity:.55}
+.btn.joker{flex:0 0 84px;padding:0 6px;font-size:18px}
+
+/* ---------- final ---------- */
+.big{font-size:clamp(64px,20vw,96px);line-height:1;animation:bob 2s ease-in-out infinite}
+.end-title{font:800 clamp(26px,8vw,38px)/1 var(--f-title);text-align:center}
+.res .num{display:block;text-align:center;font:800 clamp(44px,14vw,64px)/1 var(--f-title);color:var(--ink)}
+.res .lbl{display:block;text-align:center;font:800 13px var(--f-title);color:var(--ink2);letter-spacing:.08em;margin-bottom:10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--light);border-bottom:4px solid var(--light-b);border-radius:16px;padding:8px 4px;text-align:center;font:800 20px var(--f-title);color:var(--ink)}
+.stats small{display:block;font:800 11px var(--f-text);color:var(--ink2);text-transform:uppercase}
+.rec{margin-top:10px;text-align:center;font:800 15px var(--f-title);color:var(--ink2)}
+.rec.new{color:var(--violet)}
+.gain{margin-top:8px;display:block;width:100%;min-height:44px;border:0;border-radius:999px;background:var(--yellow);border-bottom:4px solid var(--yellow-b);color:var(--ink);font:800 15px var(--f-title);cursor:pointer}
+
+/* ---------- logros ---------- */
+.lvl{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.lvl .av{width:48px;height:48px;border-radius:50%;background:var(--light);border-bottom:4px solid var(--light-b);display:grid;place-items:center;font-size:28px;flex:none}
+.lvl .mid{flex:1;min-width:0}
+.lvl .nm{font:800 17px var(--f-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvl .tt{font:800 12px var(--f-text);color:var(--ink2)}
+.pbar{position:relative;height:16px;border-radius:999px;background:#ECEAF3;overflow:hidden}
+.pbar i{display:block;height:100%;width:0;background:var(--bg);border-radius:999px;transition:width .5s,background-color .4s}
+.pbar span{position:absolute;inset:0;display:grid;place-items:center;font:800 11px var(--f-title);color:var(--ink)}
+.jk{font:800 18px var(--f-title);background:var(--violet);color:#fff;border-radius:999px;padding:4px 12px;flex:none}
+.tabs{display:flex;padding:4px;border-radius:999px;background:rgba(0,0,0,.2);gap:4px;flex:none}
+.tab{flex:1;min-height:40px;border:0;border-radius:999px;background:transparent;font:800 14px var(--f-title);cursor:pointer;text-transform:uppercase;letter-spacing:.03em}
+.tab.on{background:#fff;color:var(--ink);text-shadow:none}
+.alist{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:6px;scrollbar-width:none}
+.alist::-webkit-scrollbar{display:none}
+.ac{background:#fff;color:var(--ink);border-radius:16px;border-bottom:var(--edge);padding:10px 12px;display:flex;gap:10px;cursor:pointer;flex:none}
+.ac .ic{width:44px;height:44px;border-radius:14px;background:var(--light);border-bottom:3px solid var(--light-b);display:grid;place-items:center;font-size:24px;flex:none}
+.ac .bd{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.ac .hd{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.ac .nm{font:800 17px var(--f-title)}
+.ac .md{font-size:15px;letter-spacing:1px;white-space:nowrap}
+.ac .ds{font:700 13px/1.2 var(--f-text);color:var(--ink2)}
+.ac .rw{font:800 13px/1.25 var(--f-text);color:var(--violet)}
+.ac .rw small{display:block;font:700 12px/1.2 var(--f-text);color:var(--ink2)}
+.ac .more{display:none;margin-top:4px;border-top:2px dashed var(--light-b);padding-top:6px;font:700 13px/1.3 var(--f-text);color:var(--ink)}
+.ac.open .more{display:block}
+.ac .more div{padding:2px 0}
+.ac .more .done{color:var(--ok-b)}
+.sec{font:800 16px var(--f-title);margin:4px 2px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px}
+.cell{min-height:56px;border:0;border-radius:14px;background:var(--light);border-bottom:4px solid var(--light-b);font:800 26px var(--f-title);color:var(--ink);position:relative;cursor:pointer;display:grid;place-items:center;padding:0 4px}
+.cell.on{background:var(--yellow);border-bottom-color:var(--yellow-b)}
+.cell.lock{opacity:.6}
+.cell .lk{position:absolute;right:3px;bottom:1px;font-size:12px}
+.cell .sw{width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.12)}
+.cell.wide{grid-column:span 2;font-size:14px;line-height:1.1}
+.cell.mode{grid-column:1/-1;font-size:14px;justify-items:start;padding:8px 12px;text-align:left}
+
+/* ---------- toasts / fx ---------- */
+#toasts{position:fixed;top:max(10px,env(safe-area-inset-top));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:60;pointer-events:none}
+.toast{background:#fff;color:var(--ink);border-radius:18px;border-bottom:var(--edge);padding:8px 14px;max-width:min(92vw,520px);display:flex;gap:10px;align-items:center;animation:toastIn .4s cubic-bezier(.3,1.5,.5,1),toastOut .35s 2.9s forwards}
+.toast .ti{font-size:30px;line-height:1}
+.toast b{display:block;font:800 15px var(--f-title)}
+.toast span{display:block;font:700 13px/1.2 var(--f-text);color:var(--ink2)}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.cf{position:absolute;top:-40px;animation:fall linear forwards;text-shadow:none}
+@keyframes fall{to{transform:translate(var(--dx),110vh) rotate(420deg)}}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes toastIn{from{opacity:0;transform:translateY(-30px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-20px)}}
+
+/* ---------- alturas pequeñas ---------- */
+@media (max-height:760px){
+  .opt{min-height:50px}
+}
+@media (max-height:640px){
+  .screen{gap:8px}
+  .opts{gap:8px}
+  .opt{min-height:46px;border-bottom-width:5px}
+  .ltr{width:28px;height:28px;font-size:14px}
+  .q{font-size:clamp(16px,4.8vw,21px)}
+  .qcard{padding:10px 12px}
+  .btn{min-height:48px;font-size:17px}
+  .btn.play{min-height:56px;font-size:24px}
+  .card{padding:10px 12px}
+  .globe{display:none}
+  .fb{margin-top:6px;padding:6px 10px}
+  .nextach{display:none}
+}
+@media (max-height:600px){
+  .fb .d{display:none}
+  .sub{display:none}
+  .hint{display:none}
+  .card h3{margin-bottom:6px;font-size:16px}
+  .topicrow{margin-top:6px}
+  .topicrow .chip{min-height:40px}
+}
+@media (max-height:540px){
+  .logo{font-size:clamp(44px,14vw,62px)}
+  .opt{min-height:42px;font-size:15px}
+  .qhead{margin-bottom:4px}
+  .big{font-size:56px}
+  .stats small{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="fx" aria-hidden="true"></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+<main id="app">
+
+  <!-- INICIO -->
+  <section id="home" class="screen on">
+    <div class="top">
+      <div class="langsw"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
+      <span style="flex:1"></span>
+      <button class="ib" id="btnAch" type="button" data-ia="achievements">🏅<span class="dot" id="achDot" hidden>0</span></button>
+      <button class="ib snd" type="button" data-ia="sound">🔊</button>
+    </div>
+    <div class="hero">
+      <div class="globe" aria-hidden="true">🌎</div>
+      <h1 class="logo"><span class="a">Geo</span><span class="b">Trivia</span></h1>
+      <p class="sub" data-i="tagline"></p>
+      <button class="player" id="player" type="button"><span class="av" id="plAv">🌎</span><span id="plTxt"></span><span class="xp"><i id="plXp"></i></span></button>
+      <button class="nextach" id="nextAch" type="button"><span id="naTxt"></span><span class="pb"><i id="naBar"></i></span></button>
+    </div>
+    <div class="card">
+      <h3 data-i="pick_mode"></h3>
+      <div class="chips" id="modes">
+        <button class="chip" type="button" data-mode="10">10</button>
+        <button class="chip" type="button" data-mode="20">20</button>
+        <button class="chip" type="button" data-mode="50">50</button>
+        <button class="chip" type="button" data-mode="inf">♾️</button>
+      </div>
+      <div class="row2"><button class="chip sm" id="topicBtn" type="button"></button><button class="chip sm" id="timerBtn" type="button"></button></div>
+      <div class="hint"><span id="modeHint"></span><span id="modeBest"></span></div>
+    </div>
+    <div class="foot"><button class="btn play" id="btnPlay" type="button" data-i="play"></button></div>
+  </section>
+
+  <!-- JUEGO -->
+  <section id="game" class="screen">
+    <div class="top">
+      <button class="ib" id="btnHome" type="button" data-ia="home">🏠</button>
+      <div class="progress"><div class="bar"><i id="barFill"></i></div><span class="score" id="score">⭐ 0</span></div>
+      <button class="ib snd" type="button" data-ia="sound">🔊</button>
+    </div>
+    <div class="card qcard" id="qcard">
+      <div class="tbar" id="tbar" hidden><i id="tfill"></i><span id="tnum"></span></div>
+      <div class="qhead"><span class="tag" id="tag"></span><span class="streak" id="streak"></span><span class="cnt" id="cnt"></span></div>
+      <div class="q" id="qtext"></div>
+      <div class="fb" id="fb" aria-live="polite"><div class="t" id="fbT"></div><div class="d" id="fbD"></div></div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="foot">
+      <button class="btn violet joker" id="btnJoker" type="button" data-ia="joker">✂️ 0</button>
+      <button class="btn go" id="btnNext" type="button" disabled></button>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="end" class="screen">
+    <div class="hero">
+      <div class="big" id="endEmoji">🏆</div>
+      <div class="end-title" id="endTitle"></div>
+    </div>
+    <div class="card res">
+      <span class="num" id="endScore">0</span>
+      <span class="lbl" data-i="points"></span>
+      <div class="stats">
+        <div>✅ <span id="endOk">0</span><small data-i="correct_l"></small></div>
+        <div>🔥 <span id="endStreak">0</span><small data-i="streak_l"></small></div>
+        <div>🎯 <span id="endAcc">0%</span><small data-i="acc_l"></small></div>
+      </div>
+      <div class="rec" id="endRec"></div>
+      <button class="gain" id="endGain" type="button"></button>
+    </div>
+    <div class="foot">
+      <button class="btn ghost" id="btnHome2" type="button" style="flex:.55"></button>
+      <button class="btn play" id="btnAgain" type="button" style="font-size:22px"></button>
+    </div>
+  </section>
+
+  <!-- LOGROS / COLECCIÓN -->
+  <section id="ach" class="screen">
+    <div class="top">
+      <button class="ib" id="btnBack" type="button" data-ia="back">←</button>
+      <h2 style="margin:0;font:800 24px var(--f-title);flex:1" data-i="ach_title"></h2>
+      <div class="langsw"><button type="button" data-lang="es">ES</button><button type="button" data-lang="en">EN</button></div>
+    </div>
+    <div class="card lvl" style="flex:none">
+      <div class="av" id="lvAv">🌎</div>
+      <div class="mid">
+        <div class="nm" id="lvNm"></div>
+        <div class="pbar"><i id="lvBar"></i><span id="lvTx"></span></div>
+        <div class="tt" id="lvTt"></div>
+      </div>
+      <div class="jk" id="lvJk">✂️ 0</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" type="button" data-tab="gen" data-i="tab_gen"></button>
+      <button class="tab" type="button" data-tab="cat" data-i="tab_cat"></button>
+      <button class="tab" type="button" data-tab="col" data-i="tab_col"></button>
+    </div>
+    <div class="alist" id="alist"></div>
+  </section>
+</main>
+
+<script>
+(()=>{
+'use strict';
+/*DATA-START*/
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const sample=(a,k)=>shuffle(a).slice(0,k);
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+let LANG='es';
+/* n nombre (id, en español) · c continente · g grupo (opciones creíbles) · p población (M) · a superficie (mil km²) · cap capital
+   nb vecinos terrestres · amb vecinos ambiguos (nunca se usan) · ll 1 sin mar / 0 con mar / null dudoso · eu euro · x grupos extra · cd capitales señuelo */
+const mk=(n,c,g,p,a,cp,o={})=>Object.assign({n,c,g,p,a,cap:cp,ll:0},o);
+const D=[
+// Sudamérica
+mk('Argentina','AM','sam',46.6,2780,'Buenos Aires',{nb:['Chile','Bolivia','Paraguay','Brasil','Uruguay']}),
+mk('Chile','AM','sam',19.8,756,'Santiago',{nb:['Argentina','Bolivia','Perú']}),
+mk('Bolivia','AM','sam',12.4,1099,null,{ll:1,nb:['Perú','Brasil','Paraguay','Argentina','Chile']}),
+mk('Paraguay','AM','sam',6.9,407,'Asunción',{ll:1,nb:['Argentina','Bolivia','Brasil']}),
+mk('Uruguay','AM','sam',3.4,176,'Montevideo',{nb:['Argentina','Brasil']}),
+mk('Brasil','AM','sam',212,8516,'Brasilia',{nb:['Uruguay','Argentina','Paraguay','Bolivia','Perú','Colombia','Venezuela','Guyana','Surinam'],amb:['Francia'],cd:['Río de Janeiro','São Paulo','Salvador']}),
+mk('Perú','AM','sam',34.2,1285,'Lima',{nb:['Ecuador','Colombia','Brasil','Bolivia','Chile']}),
+mk('Ecuador','AM','sam',18.1,284,'Quito',{nb:['Colombia','Perú']}),
+mk('Colombia','AM','sam',52.9,1142,'Bogotá',{nb:['Venezuela','Brasil','Perú','Ecuador','Panamá'],x:['cam']}),
+mk('Venezuela','AM','sam',28.4,916,'Caracas',{nb:['Colombia','Brasil','Guyana']}),
+// Centroamérica y Caribe
+mk('México','AM','cam',130.9,1964,'Ciudad de México',{nb:['Estados Unidos','Guatemala','Belice'],cd:['Guadalajara','Monterrey','Puebla']}),
+mk('Guatemala','AM','cam',17.6,109,'Ciudad de Guatemala',{nb:['México','Belice','Honduras','El Salvador']}),
+mk('Honduras','AM','cam',10.6,112,'Tegucigalpa',{nb:['Guatemala','El Salvador','Nicaragua']}),
+mk('Nicaragua','AM','cam',7.0,130,'Managua',{nb:['Honduras','Costa Rica']}),
+mk('Costa Rica','AM','cam',5.2,51,'San José',{nb:['Nicaragua','Panamá']}),
+mk('Panamá','AM','cam',4.5,75,'Ciudad de Panamá',{nb:['Costa Rica','Colombia'],x:['sam']}),
+mk('El Salvador','AM','cam',6.4,21,'San Salvador',{nb:['Guatemala','Honduras']}),
+mk('Cuba','AM','cam',11.0,110,'La Habana',{nb:[]}),
+mk('República Dominicana','AM','cam',11.3,49,'Santo Domingo',{nb:['Haití'],ar:'la '}),
+mk('Haití','AM','cam',11.9,28,'Puerto Príncipe',{nb:['República Dominicana']}),
+mk('Jamaica','AM','cam',2.8,11,'Kingston',{nb:[]}),
+// Norteamérica
+mk('Estados Unidos','AM','nam',340,9834,'Washington D. C.',{nb:['Canadá','México'],x:['cam'],cd:['Nueva York','Los Ángeles','Chicago']}),
+mk('Canadá','AM','nam',41,9985,'Ottawa',{nb:['Estados Unidos'],x:['cam'],cd:['Toronto','Montreal','Vancouver']}),
+// Europa
+mk('Alemania','EU','eur',84,358,'Berlín',{nb:['Dinamarca','Polonia','Chequia','Austria','Suiza','Francia','Luxemburgo','Bélgica','Países Bajos'],eu:1}),
+mk('Francia','EU','eur',68.4,552,'París',{nb:['Bélgica','Luxemburgo','Alemania','Suiza','Italia','Mónaco','Andorra','España'],amb:['Brasil','Surinam','Países Bajos'],eu:1}),
+mk('España','EU','eur',48.6,506,'Madrid',{nb:['Portugal','Francia','Andorra'],amb:['Marruecos','Reino Unido'],eu:1}),
+mk('Portugal','EU','eur',10.4,92,'Lisboa',{nb:['España'],eu:1}),
+mk('Italia','EU','eur',59,301,'Roma',{nb:['Francia','Suiza','Austria','Eslovenia','San Marino','Ciudad del Vaticano'],eu:1}),
+mk('Suiza','EU','eur',9.0,41,'Berna',{ll:1,nb:['Alemania','Francia','Italia','Austria','Liechtenstein'],eu:0,cd:['Zúrich','Ginebra','Basilea']}),
+mk('Austria','EU','eur',9.1,84,'Viena',{ll:1,nb:['Alemania','Chequia','Eslovaquia','Hungría','Eslovenia','Italia','Suiza','Liechtenstein'],eu:1}),
+mk('Bélgica','EU','eur',11.8,31,'Bruselas',{nb:['Francia','Luxemburgo','Alemania','Países Bajos'],eu:1}),
+mk('Países Bajos','EU','eur',17.9,42,'Ámsterdam',{nb:['Bélgica','Alemania'],amb:['Francia'],eu:1,ar:'los ',cd:['Róterdam','Utrecht','Bruselas']}),
+mk('Polonia','EU','eur',36.6,313,'Varsovia',{nb:['Alemania','Chequia','Eslovaquia','Ucrania','Bielorrusia','Lituania','Rusia'],eu:0}),
+mk('Chequia','EU','eur',10.9,79,'Praga',{ll:1,nb:['Alemania','Polonia','Eslovaquia','Austria'],eu:0}),
+mk('Eslovaquia','EU','eur',5.4,49,'Bratislava',{ll:1,nb:['Chequia','Polonia','Ucrania','Hungría','Austria'],eu:1}),
+mk('Hungría','EU','eur',9.6,93,'Budapest',{ll:1,nb:['Austria','Eslovaquia','Ucrania','Rumania','Serbia','Croacia','Eslovenia'],eu:0}),
+mk('Rumania','EU','eur',19.0,238,'Bucarest',{nb:['Ucrania','Hungría','Serbia','Bulgaria','Moldavia'],eu:0}),
+mk('Bulgaria','EU','eur',6.4,111,'Sofía',{nb:['Rumania','Serbia','Macedonia del Norte','Grecia','Turquía'],eu:1}),
+mk('Grecia','EU','eur',10.4,132,'Atenas',{nb:['Albania','Macedonia del Norte','Bulgaria','Turquía'],eu:1}),
+mk('Serbia','EU','eur',6.6,88.4,'Belgrado',{ll:1,nb:['Hungría','Rumania','Bulgaria','Macedonia del Norte','Montenegro','Bosnia y Herzegovina','Croacia'],eu:0}),
+mk('Croacia','EU','eur',3.85,56.6,'Zagreb',{nb:['Eslovenia','Hungría','Serbia','Bosnia y Herzegovina','Montenegro'],eu:1}),
+mk('Ucrania','EU','eur',null,604,'Kiev',{nb:['Polonia','Eslovaquia','Hungría','Rumania','Moldavia','Bielorrusia','Rusia'],eu:0}),
+mk('Reino Unido','EU','eur',69,244,'Londres',{nb:['Irlanda'],amb:['Francia','España'],eu:0,ar:'el '}),
+mk('Irlanda','EU','eur',5.3,70,'Dublín',{nb:['Reino Unido'],eu:1}),
+mk('Suecia','EU','eur',10.6,450,'Estocolmo',{nb:['Noruega','Finlandia'],eu:0}),
+mk('Noruega','EU','eur',5.6,385,'Oslo',{nb:['Suecia','Finlandia','Rusia'],eu:0}),
+mk('Finlandia','EU','eur',5.6,338,'Helsinki',{nb:['Suecia','Noruega','Rusia'],eu:1}),
+mk('Dinamarca','EU','eur',5.96,43.1,'Copenhague',{nb:['Alemania'],eu:0}),
+mk('Bielorrusia','EU','eur',9.1,208,'Minsk',{ll:1,nb:['Rusia','Ucrania','Polonia','Lituania','Letonia'],eu:0}),
+mk('Rusia','EU','eur',144,17098,'Moscú',{nb:['Noruega','Finlandia','Estonia','Letonia','Lituania','Polonia','Bielorrusia','Ucrania','Georgia','Azerbaiyán','Kazajistán','China','Mongolia','Corea del Norte'],x:['aeast','asouth'],eu:0}),
+// Asia
+mk('Turquía','AS','awest',85.5,784,'Ankara',{nb:['Grecia','Bulgaria','Georgia','Armenia','Azerbaiyán','Irán','Irak','Siria'],x:['eur'],cd:['Estambul','Esmirna','Antalya']}),
+mk('Irán','AS','awest',90,1648,'Teherán',{nb:['Irak','Turquía','Armenia','Azerbaiyán','Turkmenistán','Afganistán','Pakistán'],x:['asouth']}),
+mk('Irak','AS','awest',46,438,'Bagdad',{ll:null,nb:['Irán','Turquía','Siria','Jordania','Arabia Saudita','Kuwait'],x:['asouth']}),
+mk('Arabia Saudita','AS','awest',36,2150,'Riad',{nb:['Jordania','Irak','Kuwait','Catar','Emiratos Árabes Unidos','Omán','Yemen'],amb:['Baréin'],x:['fn']}),
+mk('China','AS','aeast',1410,9597,'Pekín',{nb:['Corea del Norte','Rusia','Mongolia','Kazajistán','Kirguistán','Tayikistán','Afganistán','Pakistán','India','Nepal','Bután','Myanmar','Laos','Vietnam'],x:['asouth'],cd:['Shanghái','Cantón','Shenzhen']}),
+mk('Japón','AS','aeast',123,378,'Tokio',{nb:[],cd:['Osaka','Kioto','Yokohama']}),
+mk('Corea del Sur','AS','aeast',51.7,100,'Seúl',{nb:['Corea del Norte'],cd:['Busan','Incheon','Pionyang']}),
+mk('Tailandia','AS','aeast',66,513,'Bangkok',{nb:['Myanmar','Laos','Camboya','Malasia'],x:['asouth'],cd:['Chiang Mai','Phuket','Pattaya']}),
+mk('Vietnam','AS','aeast',100,331,'Hanoi',{nb:['China','Laos','Camboya'],cd:['Ho Chi Minh','Da Nang','Hue']}),
+mk('Indonesia','AS','aeast',281,1905,null,{nb:['Malasia','Papúa Nueva Guinea','Timor Oriental']}),
+mk('Filipinas','AS','aeast',115,300,'Manila',{nb:[]}),
+mk('Camboya','AS','aeast',17,181,'Nom Pen',{nb:['Tailandia','Laos','Vietnam']}),
+mk('Malasia','AS','aeast',34,331,'Kuala Lumpur',{nb:['Tailandia','Indonesia','Brunéi'],amb:['Singapur']}),
+mk('Laos','AS','aeast',7.7,237,'Vientiane',{ll:1,nb:['China','Vietnam','Camboya','Tailandia','Myanmar']}),
+mk('Mongolia','AS','aeast',3.5,1564,'Ulán Bator',{ll:1,nb:['Rusia','China'],x:['asouth']}),
+mk('Myanmar','AS','aeast',54,677,'Naipyidó',{nb:['Bangladés','India','China','Laos','Tailandia'],x:['asouth'],cd:['Rangún','Mandalay','Bagan']}),
+mk('India','AS','asouth',1430,3287,'Nueva Delhi',{nb:['Pakistán','China','Nepal','Bután','Bangladés','Myanmar'],amb:['Afganistán'],x:['aeast'],cd:['Mumbai','Calcuta','Bangalore']}),
+mk('Pakistán','AS','asouth',241,882,'Islamabad',{nb:['India','China','Afganistán','Irán'],cd:['Karachi','Lahore','Rawalpindi']}),
+mk('Bangladés','AS','asouth',173,148,'Daca',{nb:['India','Myanmar']}),
+mk('Nepal','AS','asouth',30,147,'Katmandú',{ll:1,nb:['India','China']}),
+mk('Afganistán','AS','asouth',42,652,'Kabul',{ll:1,nb:['Pakistán','Irán','Turkmenistán','Uzbekistán','Tayikistán','China'],amb:['India'],x:['awest']}),
+mk('Kazajistán','AS','asouth',20,2725,'Astaná',{ll:null,nb:['Rusia','China','Kirguistán','Uzbekistán','Turkmenistán'],x:['aeast']}),
+mk('Uzbekistán','AS','asouth',36.4,449,'Taskent',{ll:1,nb:['Kazajistán','Kirguistán','Tayikistán','Afganistán','Turkmenistán']}),
+// África
+mk('Egipto','AF','fn',114,1001,'El Cairo',{nb:['Libia','Sudán','Israel'],cd:['Alejandría','Luxor','Guiza']}),
+mk('Marruecos','AF','fn',37.5,446.6,'Rabat',{nb:['Argelia'],amb:['España'],cd:['Casablanca','Marrakech','Fez']}),
+mk('Argelia','AF','fn',46,2382,'Argel',{nb:['Marruecos','Túnez','Libia','Níger','Malí','Mauritania']}),
+mk('Libia','AF','fn',7.0,1760,'Trípoli',{nb:['Túnez','Argelia','Níger','Chad','Sudán','Egipto']}),
+mk('Nigeria','AF','fn',227,924,'Abuya',{nb:['Benín','Níger','Chad','Camerún'],cd:['Lagos','Kano','Ibadán']}),
+mk('Ghana','AF','fn',34,239,'Acra',{nb:['Costa de Marfil','Burkina Faso','Togo']}),
+mk('Senegal','AF','fn',18,197,'Dakar',{nb:['Mauritania','Malí','Guinea','Guinea-Bisáu','Gambia']}),
+mk('Costa de Marfil','AF','fn',29,322,null,{nb:['Liberia','Guinea','Malí','Burkina Faso','Ghana']}),
+mk('Malí','AF','fn',23,1240,'Bamako',{ll:1,nb:['Argelia','Níger','Burkina Faso','Costa de Marfil','Guinea','Senegal','Mauritania']}),
+mk('Níger','AF','fn',27,1267,'Niamey',{ll:1,nb:['Argelia','Libia','Chad','Nigeria','Benín','Burkina Faso','Malí']}),
+mk('Chad','AF','fn',18.5,1284,'Yamena',{ll:1,nb:['Libia','Sudán','República Centroafricana','Camerún','Nigeria','Níger'],x:['fs']}),
+mk('Camerún','AF','fn',28,475,'Yaundé',{nb:['Nigeria','Chad','República Centroafricana','República del Congo','Gabón','Guinea Ecuatorial'],x:['fs'],cd:['Duala','Garúa','Bamenda']}),
+mk('Etiopía','AF','fs',126,1104,'Adís Abeba',{ll:1,nb:['Eritrea','Yibuti','Somalia','Kenia','Sudán del Sur','Sudán']}),
+mk('Kenia','AF','fs',56,580,'Nairobi',{nb:['Etiopía','Somalia','Sudán del Sur','Uganda','Tanzania'],x:['fn']}),
+mk('Tanzania','AF','fs',67,945,null,{nb:['Kenia','Uganda','Ruanda','Burundi','RD Congo','Zambia','Malaui','Mozambique']}),
+mk('Uganda','AF','fs',49,241,'Kampala',{ll:1,nb:['Kenia','Sudán del Sur','RD Congo','Ruanda','Tanzania']}),
+mk('Sudáfrica','AF','fs',63,1221,null,{nb:['Namibia','Botsuana','Zimbabue','Mozambique','Esuatini','Lesoto']}),
+mk('Angola','AF','fs',37,1247,'Luanda',{nb:['Namibia','Zambia','RD Congo','República del Congo']}),
+mk('Mozambique','AF','fs',34,802,'Maputo',{nb:['Tanzania','Malaui','Zambia','Zimbabue','Sudáfrica','Esuatini']}),
+mk('Zambia','AF','fs',21,753,'Lusaka',{ll:1,nb:['RD Congo','Tanzania','Malaui','Mozambique','Zimbabue','Namibia','Angola'],amb:['Botsuana']}),
+mk('Zimbabue','AF','fs',16.6,391,'Harare',{ll:1,nb:['Zambia','Mozambique','Sudáfrica','Botsuana'],amb:['Namibia']}),
+mk('Botsuana','AF','fs',2.5,582,'Gaborone',{ll:1,nb:['Namibia','Sudáfrica','Zimbabue'],amb:['Zambia']}),
+mk('Namibia','AF','fs',3.0,826,'Windhoek',{nb:['Angola','Zambia','Botsuana','Sudáfrica'],amb:['Zimbabue']}),
+mk('RD Congo','AF','fs',105,2345,'Kinsasa',{ll:null,nb:['República del Congo','República Centroafricana','Sudán del Sur','Uganda','Ruanda','Burundi','Tanzania','Zambia','Angola'],ar:'la '}),
+mk('Madagascar','AF','fs',31,587,'Antananarivo',{nb:[]}),
+// Oceanía
+mk('Australia','OC','oce',26.6,7692,'Canberra',{nb:[],cd:['Sídney','Melbourne','Brisbane']}),
+mk('Nueva Zelanda','OC','oce',5.3,268,'Wellington',{nb:[],cd:['Auckland','Christchurch','Sídney']}),
+// ---- Europa (resto)
+mk('Albania','EU','eur',2.4,28.7,'Tirana',{nb:['Montenegro','Macedonia del Norte','Grecia'],eu:0}),
+mk('Andorra','EU','eur',0.08,0.47,'Andorra la Vieja',{ll:1,nb:['España','Francia'],eu:1}),
+mk('Bosnia y Herzegovina','EU','eur',3.2,51.2,'Sarajevo',{ll:null,nb:['Croacia','Serbia','Montenegro'],eu:0}),
+mk('Chipre','EU','eur',1.3,9.25,'Nicosia',{nb:[],x:['awest'],eu:1}),
+mk('Eslovenia','EU','eur',2.1,20.3,'Liubliana',{nb:['Italia','Austria','Hungría','Croacia'],eu:1}),
+mk('Estonia','EU','eur',1.4,45.3,'Tallin',{nb:['Rusia','Letonia'],eu:1}),
+mk('Islandia','EU','eur',0.39,103,'Reikiavik',{nb:[],eu:0}),
+mk('Letonia','EU','eur',1.9,64.6,'Riga',{nb:['Estonia','Lituania','Bielorrusia','Rusia'],eu:1}),
+mk('Liechtenstein','EU','eur',0.04,0.16,'Vaduz',{ll:1,nb:['Suiza','Austria'],eu:0}),
+mk('Lituania','EU','eur',2.9,65.3,'Vilna',{nb:['Letonia','Bielorrusia','Polonia','Rusia'],eu:1}),
+mk('Luxemburgo','EU','eur',0.67,2.59,'Luxemburgo',{ll:1,nb:['Bélgica','Alemania','Francia'],eu:1}),
+mk('Malta','EU','eur',0.54,0.316,'La Valeta',{nb:[],eu:1}),
+mk('Moldavia','EU','eur',2.6,33.8,'Chisináu',{ll:1,nb:['Rumania','Ucrania'],eu:0}),
+mk('Mónaco','EU','eur',0.039,0.002,null,{nb:['Francia'],eu:1}),
+mk('Montenegro','EU','eur',0.62,13.8,'Podgorica',{nb:['Croacia','Bosnia y Herzegovina','Serbia','Albania'],eu:null}),
+mk('Macedonia del Norte','EU','eur',1.8,25.7,'Skopie',{ll:1,nb:['Serbia','Bulgaria','Grecia','Albania'],eu:0}),
+mk('San Marino','EU','eur',0.034,0.061,null,{ll:1,nb:['Italia'],eu:1}),
+mk('Ciudad del Vaticano','EU','eur',0.0008,0.00049,null,{ll:1,nb:['Italia'],eu:1}),
+// ---- Asia (resto)
+mk('Armenia','AS','awest',2.97,29.7,'Ereván',{ll:1,nb:['Turquía','Georgia','Azerbaiyán','Irán']}),
+mk('Azerbaiyán','AS','awest',10.3,86.6,'Bakú',{ll:null,nb:['Rusia','Georgia','Armenia','Irán','Turquía']}),
+mk('Georgia','AS','awest',3.7,69.7,'Tiflis',{nb:['Rusia','Azerbaiyán','Armenia','Turquía'],x:['eur']}),
+mk('Siria','AS','awest',24,185,'Damasco',{nb:['Turquía','Irak','Jordania','Israel','Líbano']}),
+mk('Jordania','AS','awest',11.4,89.3,'Amán',{nb:['Siria','Irak','Arabia Saudita','Israel']}),
+mk('Líbano','AS','awest',5.4,10.45,'Beirut',{nb:['Siria','Israel']}),
+mk('Israel','AS','awest',9.8,22,null,{nb:['Líbano','Siria','Jordania','Egipto']}),
+mk('Kuwait','AS','awest',4.3,17.8,'Ciudad de Kuwait',{nb:['Irak','Arabia Saudita']}),
+mk('Catar','AS','awest',2.7,11.6,'Doha',{nb:['Arabia Saudita']}),
+mk('Baréin','AS','awest',1.5,0.78,'Manama',{nb:[]}),
+mk('Emiratos Árabes Unidos','AS','awest',10,83.6,'Abu Dabi',{nb:['Arabia Saudita','Omán'],ar:'los '}),
+mk('Omán','AS','awest',5.2,309.5,'Mascate',{nb:['Emiratos Árabes Unidos','Arabia Saudita','Yemen']}),
+mk('Yemen','AS','awest',34,528,'Saná',{nb:['Arabia Saudita','Omán']}),
+mk('Corea del Norte','AS','aeast',26.4,120.5,'Pionyang',{nb:['Corea del Sur','China','Rusia']}),
+mk('Kirguistán','AS','asouth',7.2,199.9,'Biskek',{ll:1,nb:['Kazajistán','Uzbekistán','Tayikistán','China']}),
+mk('Tayikistán','AS','asouth',10.4,143.1,'Dusambé',{ll:1,nb:['Kirguistán','Uzbekistán','Afganistán','China']}),
+mk('Turkmenistán','AS','asouth',7.5,488.1,'Asjabad',{ll:null,nb:['Kazajistán','Uzbekistán','Afganistán','Irán']}),
+mk('Bután','AS','asouth',0.79,38.4,'Timbu',{ll:1,nb:['China','India']}),
+mk('Brunéi','AS','aeast',0.46,5.77,'Bandar Seri Begawan',{nb:['Malasia']}),
+mk('Timor Oriental','AS','aeast',1.4,14.9,'Dili',{nb:['Indonesia']}),
+mk('Singapur','AS','aeast',5.9,0.73,null,{nb:[]}),
+mk('Maldivas','AS','asouth',0.52,0.3,'Malé',{nb:[],ar:'las '}),
+mk('Sri Lanka','AS','asouth',22,65.6,null,{nb:[]}),
+// ---- África (resto)
+mk('Túnez','AF','fn',12.1,163.6,'Ciudad de Túnez',{nb:['Argelia','Libia']}),
+mk('Sudán','AF','fn',48,1861,'Jartum',{ll:0,nb:['Egipto','Libia','Chad','República Centroafricana','Sudán del Sur','Etiopía','Eritrea'],x:['fs']}),
+mk('Sudán del Sur','AF','fs',11.9,619,'Yuba',{ll:1,nb:['Sudán','Etiopía','Kenia','Uganda','RD Congo','República Centroafricana'],x:['fn']}),
+mk('Mauritania','AF','fn',4.9,1030,'Nuakchot',{nb:['Argelia','Malí','Senegal'],amb:['Marruecos']}),
+mk('Benín','AF','fn',13.7,114.8,'Porto Novo',{nb:['Togo','Burkina Faso','Níger','Nigeria']}),
+mk('Togo','AF','fn',9.3,56.8,'Lomé',{nb:['Ghana','Burkina Faso','Benín']}),
+mk('Burkina Faso','AF','fn',23.5,274.2,'Uagadugú',{ll:1,nb:['Malí','Níger','Benín','Togo','Ghana','Costa de Marfil']}),
+mk('Liberia','AF','fn',5.6,111.4,'Monrovia',{nb:['Sierra Leona','Guinea','Costa de Marfil']}),
+mk('Sierra Leona','AF','fn',8.6,72.3,'Freetown',{nb:['Guinea','Liberia']}),
+mk('Guinea','AF','fn',14.2,245.9,'Conakri',{nb:['Guinea-Bisáu','Senegal','Malí','Costa de Marfil','Liberia','Sierra Leona']}),
+mk('Guinea-Bisáu','AF','fn',2.2,36.1,'Bisáu',{nb:['Senegal','Guinea']}),
+mk('Gambia','AF','fn',2.7,11.3,'Banjul',{nb:['Senegal']}),
+mk('Cabo Verde','AF','fn',0.6,4.03,'Praia',{nb:[]}),
+mk('Eritrea','AF','fs',3.7,117.6,'Asmara',{nb:['Sudán','Etiopía','Yibuti']}),
+mk('Yibuti','AF','fs',1.1,23.2,'Yibuti',{nb:['Eritrea','Etiopía','Somalia']}),
+mk('Somalia','AF','fs',18.1,637.7,'Mogadiscio',{nb:['Etiopía','Yibuti','Kenia']}),
+mk('Ruanda','AF','fs',14.3,26.3,'Kigali',{ll:1,nb:['Uganda','Tanzania','Burundi','RD Congo']}),
+mk('Burundi','AF','fs',13.2,27.8,null,{ll:1,nb:['Ruanda','Tanzania','RD Congo']}),
+mk('Malaui','AF','fs',21,118.5,'Lilongüe',{ll:1,nb:['Zambia','Tanzania','Mozambique']}),
+mk('Esuatini','AF','fs',1.2,17.4,'Mbabane',{ll:1,nb:['Sudáfrica','Mozambique']}),
+mk('Lesoto','AF','fs',2.3,30.4,'Maseru',{ll:1,nb:['Sudáfrica']}),
+mk('Gabón','AF','fn',2.4,267.7,'Libreville',{nb:['Guinea Ecuatorial','Camerún','República del Congo'],x:['fs']}),
+mk('Guinea Ecuatorial','AF','fn',1.9,28.1,'Malabo',{nb:['Camerún','Gabón'],x:['fs']}),
+mk('Santo Tomé y Príncipe','AF','fn',0.23,0.96,'Santo Tomé',{nb:[]}),
+mk('República Centroafricana','AF','fn',5.4,623,'Bangui',{ll:1,nb:['Chad','Sudán','Sudán del Sur','RD Congo','República del Congo','Camerún'],x:['fs'],ar:'la '}),
+mk('República del Congo','AF','fn',6.2,342,'Brazzaville',{nb:['Gabón','Camerún','República Centroafricana','RD Congo','Angola'],x:['fs'],ar:'la '}),
+mk('Comoras','AF','fs',0.85,1.86,'Moroni',{nb:[],ar:'las '}),
+mk('Mauricio','AF','fs',1.3,2.04,'Port Louis',{nb:[]}),
+mk('Seychelles','AF','fs',0.1,0.46,'Victoria',{nb:[],ar:'las '}),
+// ---- América (resto)
+mk('Guyana','AM','sam',0.82,215,'Georgetown',{nb:['Venezuela','Brasil','Surinam']}),
+mk('Surinam','AM','sam',0.62,163.8,'Paramaribo',{nb:['Guyana','Brasil'],amb:['Francia']}),
+mk('Belice','AM','cam',0.41,23,'Belmopán',{nb:['México','Guatemala']}),
+mk('Bahamas','AM','cam',0.41,13.9,'Nasáu',{nb:[],ar:'las '}),
+mk('Barbados','AM','cam',0.28,0.43,'Bridgetown',{nb:[]}),
+mk('Trinidad y Tobago','AM','cam',1.5,5.13,'Puerto España',{nb:[]}),
+mk('Granada','AM','cam',0.12,0.34,"Saint George's",{nb:[]}),
+mk('Santa Lucía','AM','cam',0.18,0.62,'Castries',{nb:[]}),
+mk('San Vicente y las Granadinas','AM','cam',0.1,0.39,'Kingstown',{nb:[]}),
+mk('Dominica','AM','cam',0.07,0.75,'Roseau',{nb:[]}),
+mk('Antigua y Barbuda','AM','cam',0.1,0.44,"Saint John's",{nb:[]}),
+mk('San Cristóbal y Nieves','AM','cam',0.05,0.26,'Basseterre',{nb:[]}),
+// ---- Oceanía (resto)
+mk('Papúa Nueva Guinea','OC','oce',10.3,462.8,'Port Moresby',{nb:['Indonesia']}),
+mk('Fiyi','OC','oce',0.93,18.3,'Suva',{nb:[]}),
+mk('Islas Salomón','OC','oce',0.74,28.9,'Honiara',{nb:[],ar:'las '}),
+mk('Vanuatu','OC','oce',0.33,12.2,'Port Vila',{nb:[]}),
+mk('Samoa','OC','oce',0.22,2.84,'Apia',{nb:[]}),
+mk('Tonga','OC','oce',0.11,0.75,'Nukualofa',{nb:[]}),
+mk('Kiribati','OC','oce',0.13,0.81,'Tarawa',{nb:[]}),
+mk('Tuvalu','OC','oce',0.011,0.026,'Funafuti',{nb:[]}),
+mk('Nauru','OC','oce',0.012,0.021,null,{nb:[]}),
+mk('Palaos','OC','oce',0.018,0.46,'Ngerulmud',{nb:[]}),
+mk('Micronesia','OC','oce',0.11,0.7,'Palikir',{nb:[]}),
+mk('Islas Marshall','OC','oce',0.04,0.18,'Majuro',{nb:[],ar:'las '})
+];
+const PEOPLE=[
+['Lionel Messi','Argentina','Rosario'],['Diego Maradona','Argentina','Lanús'],['Che Guevara','Argentina','Rosario'],['Jorge Luis Borges','Argentina','Buenos Aires'],
+['Pelé','Brasil','Três Corações'],['Neymar','Brasil','Mogi das Cruzes'],
+['Shakira','Colombia','Barranquilla'],['Gabriel García Márquez','Colombia','Aracataca'],
+['Frida Kahlo','México','Coyoacán'],['Octavio Paz','México','la Ciudad de México'],
+['Pablo Neruda','Chile','Parral'],['Simón Bolívar','Venezuela','Caracas'],['Mario Vargas Llosa','Perú','Arequipa'],['Fidel Castro','Cuba','Birán'],
+['Napoleón Bonaparte','Francia','Ajaccio (Córcega)'],['Zinedine Zidane','Francia','Marsella'],['Kylian Mbappé','Francia','París'],
+['Albert Einstein','Alemania','Ulm'],['Ludwig van Beethoven','Alemania','Bonn'],['Wolfgang Amadeus Mozart','Austria','Salzburgo'],
+['Leonardo da Vinci','Italia','Vinci'],['Pablo Picasso','España','Málaga'],['Miguel de Cervantes','España','Alcalá de Henares'],['Rafael Nadal','España','Manacor'],['Salvador Dalí','España','Figueras'],
+['Cristiano Ronaldo','Portugal','Funchal'],['Roger Federer','Suiza','Basilea'],['Novak Djokovic','Serbia','Belgrado'],['Nikola Tesla','Croacia','Smiljan'],
+['Marie Curie','Polonia','Varsovia'],['Robert Lewandowski','Polonia','Varsovia'],['Zlatan Ibrahimović','Suecia','Malmö'],['Hans Christian Andersen','Dinamarca','Odense'],
+['Vincent van Gogh','Países Bajos','Zundert'],['William Shakespeare','Reino Unido','Stratford-upon-Avon'],['Charles Darwin','Reino Unido','Shrewsbury'],
+['León Tolstói','Rusia','Yásnaia Poliana'],['Fiódor Dostoievski','Rusia','Moscú'],
+['Mahatma Gandhi','India','Porbandar'],['Nelson Mandela','Sudáfrica','Mvezo'],['Elon Musk','Sudáfrica','Pretoria'],
+['Bob Marley','Jamaica','Nine Mile'],['Usain Bolt','Jamaica','Sherwood Content'],
+['Michael Jordan','Estados Unidos','Brooklyn'],['Leonardo DiCaprio','Estados Unidos','Los Ángeles'],['Taylor Swift','Estados Unidos','West Reading'],
+['Steve Jobs','Estados Unidos','San Francisco'],['Barack Obama','Estados Unidos','Honolulu'],['Bruce Lee','Estados Unidos','San Francisco'],
+['Justin Bieber','Canadá','London (Ontario)'],['Diego Rivera','México','Guanajuato'],['Rigoberta Menchú','Guatemala','Chimel'],['José Martí','Cuba','La Habana'],['Isabel Allende','Perú','Lima'],['Mercedes Sosa','Argentina','San Miguel de Tucumán'],['Julio Cortázar','Bélgica','Bruselas'],['Ayrton Senna','Brasil','São Paulo'],['Johan Cruyff','Países Bajos','Ámsterdam'],['Sigmund Freud','Chequia','Příbor'],['Juan Pablo II','Polonia','Wadowice'],['Victor Hugo','Francia','Besanzón'],['Galileo Galilei','Italia','Pisa'],['Cristóbal Colón','Italia','Génova'],
+['Antoni Gaudí','España','Reus'],['Federico García Lorca','España','Fuente Vaqueros'],['Fernando Pessoa','Portugal','Lisboa'],['Charles Dickens','Reino Unido','Portsmouth'],['John Lennon','Reino Unido','Liverpool'],['Isaac Newton','Reino Unido','Woolsthorpe'],['Oscar Wilde','Irlanda','Dublín'],['Alfred Nobel','Suecia','Estocolmo'],['Edvard Munch','Noruega','Løten'],['Jean Sibelius','Finlandia','Hämeenlinna'],['Björk','Islandia','Reikiavik'],
+['Luka Modrić','Croacia','Zadar'],['Madre Teresa de Calcuta','Macedonia del Norte','Skopie'],
+['Yuri Gagarin','Rusia','Klúshino'],['Piotr Chaikovski','Rusia','Votkinsk'],['Marc Chagall','Bielorrusia','Vítebsk'],
+['Confucio','China','Qufu'],['Akira Kurosawa','Japón','Tokio'],['Rabindranath Tagore','India','Calcuta'],['Malala Yousafzai','Pakistán','Mingora'],['Ho Chi Minh','Vietnam','Kim Liên'],['Aung San Suu Kyi','Myanmar','Rangún'],['Khalil Gibran','Líbano','Bsharri'],
+['Cleopatra','Egipto','Alejandría'],['Kofi Annan','Ghana','Kumasi'],['Didier Drogba','Costa de Marfil','Abiyán'],['Samuel Eto\'o','Camerún','Nkon'],['Wangari Maathai','Kenia','Nyeri'],
+['Chinua Achebe','Nigeria','Ogidi'],['Desmond Tutu','Sudáfrica','Klerksdorp'],['Léopold Senghor','Senegal','Joal'],['Aníbal','Túnez','Cartago'],['Ibn Battuta','Marruecos','Tánger'],['Albert Camus','Argelia','Mondovi'],
+['Edmund Hillary','Nueva Zelanda','Auckland'],['Hugh Jackman','Australia','Sídney'],['Freddie Mercury','Tanzania','Zanzíbar']
+];
+const byName={};D.forEach(d=>byName[d.n]=d);
+
+/* ---------- traducciones (clave = texto en español) ---------- */
+const EN={
+'Argentina':'Argentina','Chile':'Chile','Bolivia':'Bolivia','Paraguay':'Paraguay','Uruguay':'Uruguay','Brasil':'Brazil','Perú':'Peru','Ecuador':'Ecuador','Colombia':'Colombia','Venezuela':'Venezuela',
+'México':'Mexico','Guatemala':'Guatemala','Honduras':'Honduras','Nicaragua':'Nicaragua','Costa Rica':'Costa Rica','Panamá':'Panama','El Salvador':'El Salvador','Cuba':'Cuba','República Dominicana':'Dominican Republic','Haití':'Haiti','Jamaica':'Jamaica',
+'Estados Unidos':'United States','Canadá':'Canada','Alemania':'Germany','Francia':'France','España':'Spain','Portugal':'Portugal','Italia':'Italy','Suiza':'Switzerland','Austria':'Austria','Bélgica':'Belgium','Países Bajos':'Netherlands',
+'Polonia':'Poland','Chequia':'Czechia','Eslovaquia':'Slovakia','Hungría':'Hungary','Rumania':'Romania','Bulgaria':'Bulgaria','Grecia':'Greece','Serbia':'Serbia','Croacia':'Croatia','Ucrania':'Ukraine','Reino Unido':'United Kingdom','Irlanda':'Ireland',
+'Suecia':'Sweden','Noruega':'Norway','Finlandia':'Finland','Dinamarca':'Denmark','Bielorrusia':'Belarus','Rusia':'Russia','Turquía':'Turkey','Irán':'Iran','Irak':'Iraq','Arabia Saudita':'Saudi Arabia','China':'China','Japón':'Japan','Corea del Sur':'South Korea',
+'Tailandia':'Thailand','Vietnam':'Vietnam','Indonesia':'Indonesia','Filipinas':'Philippines','Camboya':'Cambodia','Malasia':'Malaysia','Laos':'Laos','Mongolia':'Mongolia','Myanmar':'Myanmar','India':'India','Pakistán':'Pakistan','Bangladés':'Bangladesh','Nepal':'Nepal',
+'Afganistán':'Afghanistan','Kazajistán':'Kazakhstan','Uzbekistán':'Uzbekistan','Egipto':'Egypt','Marruecos':'Morocco','Argelia':'Algeria','Libia':'Libya','Nigeria':'Nigeria','Ghana':'Ghana','Senegal':'Senegal','Costa de Marfil':'Ivory Coast','Malí':'Mali','Níger':'Niger','Chad':'Chad','Camerún':'Cameroon',
+'Etiopía':'Ethiopia','Kenia':'Kenya','Tanzania':'Tanzania','Uganda':'Uganda','Sudáfrica':'South Africa','Angola':'Angola','Mozambique':'Mozambique','Zambia':'Zambia','Zimbabue':'Zimbabwe','Botsuana':'Botswana','Namibia':'Namibia','RD Congo':'DR Congo','Madagascar':'Madagascar','Australia':'Australia','Nueva Zelanda':'New Zealand',
+/* vecinos que no están en la base */
+'Belice':'Belize','Guyana':'Guyana','Surinam':'Suriname','Luxemburgo':'Luxembourg','Mónaco':'Monaco','Andorra':'Andorra','San Marino':'San Marino','Ciudad del Vaticano':'Vatican City','Liechtenstein':'Liechtenstein','Eslovenia':'Slovenia','Moldavia':'Moldova',
+'Macedonia del Norte':'North Macedonia','Albania':'Albania','Bosnia y Herzegovina':'Bosnia and Herzegovina','Montenegro':'Montenegro','Lituania':'Lithuania','Letonia':'Latvia','Estonia':'Estonia','Georgia':'Georgia','Armenia':'Armenia','Azerbaiyán':'Azerbaijan','Siria':'Syria',
+'Jordania':'Jordan','Kuwait':'Kuwait','Catar':'Qatar','Emiratos Árabes Unidos':'United Arab Emirates','Omán':'Oman','Yemen':'Yemen','Corea del Norte':'North Korea','Kirguistán':'Kyrgyzstan','Tayikistán':'Tajikistan','Turkmenistán':'Turkmenistan','Bután':'Bhutan','Brunéi':'Brunei',
+'Papúa Nueva Guinea':'Papua New Guinea','Timor Oriental':'East Timor','Túnez':'Tunisia','Mauritania':'Mauritania','Sudán':'Sudan','Sudán del Sur':'South Sudan','Benín':'Benin','Togo':'Togo','Burkina Faso':'Burkina Faso','Liberia':'Liberia','Guinea':'Guinea','Guinea-Bisáu':'Guinea-Bissau',
+'Gambia':'Gambia','Eritrea':'Eritrea','Yibuti':'Djibouti','Somalia':'Somalia','Ruanda':'Rwanda','Burundi':'Burundi','Malaui':'Malawi','Esuatini':'Eswatini','Lesoto':'Lesotho','Gabón':'Gabon','Guinea Ecuatorial':'Equatorial Guinea','República Centroafricana':'Central African Republic','República del Congo':'Republic of the Congo',
+/* capitales */
+'Asunción':'Asuncion','Brasilia':'Brasilia','Ciudad de México':'Mexico City','Ciudad de Guatemala':'Guatemala City','Ciudad de Panamá':'Panama City','La Habana':'Havana','Puerto Príncipe':'Port-au-Prince','Washington D. C.':'Washington, D.C.','Berlín':'Berlin','París':'Paris','Lisboa':'Lisbon','Roma':'Rome','Berna':'Bern','Viena':'Vienna',
+'Bruselas':'Brussels','Ámsterdam':'Amsterdam','Varsovia':'Warsaw','Praga':'Prague','Bucarest':'Bucharest','Sofía':'Sofia','Atenas':'Athens','Belgrado':'Belgrade','Kiev':'Kyiv','Londres':'London','Dublín':'Dublin','Estocolmo':'Stockholm','Copenhague':'Copenhagen','Moscú':'Moscow','Teherán':'Tehran','Bagdad':'Baghdad','Riad':'Riyadh',
+'Pekín':'Beijing','Tokio':'Tokyo','Seúl':'Seoul','Nom Pen':'Phnom Penh','Ulán Bator':'Ulaanbaatar','Naipyidó':'Naypyidaw','Nueva Delhi':'New Delhi','Daca':'Dhaka','Katmandú':'Kathmandu','Astaná':'Astana','Taskent':'Tashkent','El Cairo':'Cairo','Argel':'Algiers','Trípoli':'Tripoli','Abuya':'Abuja','Acra':'Accra','Yamena':"N'Djamena",'Yaundé':'Yaoundé',
+'Adís Abeba':'Addis Ababa','Kinsasa':'Kinshasa',
+/* ciudades señuelo */
+'Río de Janeiro':'Rio de Janeiro','Nueva York':'New York','Los Ángeles':'Los Angeles','Zúrich':'Zurich','Ginebra':'Geneva','Basilea':'Basel','Róterdam':'Rotterdam','Estambul':'Istanbul','Esmirna':'Izmir','Shanghái':'Shanghai','Cantón':'Guangzhou','Kioto':'Kyoto','Pionyang':'Pyongyang',
+'Rangún':'Yangon','Calcuta':'Kolkata','Alejandría':'Alexandria','Guiza':'Giza','Ibadán':'Ibadan','Duala':'Douala','Garúa':'Garoua','Sídney':'Sydney',
+/* personas y lugares */
+'Napoleón Bonaparte':'Napoleon Bonaparte','León Tolstói':'Leo Tolstoy','Fiódor Dostoievski':'Fyodor Dostoevsky','la Ciudad de México':'Mexico City','Ajaccio (Córcega)':'Ajaccio (Corsica)','Marsella':'Marseille','Salzburgo':'Salzburg','Figueras':'Figueres','Yásnaia Poliana':'Yasnaya Polyana',
+'Chipre':'Cyprus','Islandia':'Iceland','Malta':'Malta','Líbano':'Lebanon','Israel':'Israel','Baréin':'Bahrain','Singapur':'Singapore','Maldivas':'Maldives','Sri Lanka':'Sri Lanka','Sierra Leona':'Sierra Leone','Cabo Verde':'Cape Verde','Santo Tomé y Príncipe':'São Tomé and Príncipe','Comoras':'Comoros','Mauricio':'Mauritius','Seychelles':'Seychelles',
+'Bahamas':'Bahamas','Barbados':'Barbados','Trinidad y Tobago':'Trinidad and Tobago','Granada':'Grenada','Santa Lucía':'Saint Lucia','San Vicente y las Granadinas':'Saint Vincent and the Grenadines','Dominica':'Dominica','Antigua y Barbuda':'Antigua and Barbuda','San Cristóbal y Nieves':'Saint Kitts and Nevis',
+'Fiyi':'Fiji','Islas Salomón':'Solomon Islands','Vanuatu':'Vanuatu','Samoa':'Samoa','Tonga':'Tonga','Kiribati':'Kiribati','Tuvalu':'Tuvalu','Nauru':'Nauru','Palaos':'Palau','Micronesia':'Micronesia','Islas Marshall':'Marshall Islands',
+'Andorra la Vieja':'Andorra la Vella','Liubliana':'Ljubljana','Tallin':'Tallinn','Reikiavik':'Reykjavik','Vilna':'Vilnius','La Valeta':'Valletta','Chisináu':'Chisinau','Skopie':'Skopje','Ereván':'Yerevan','Bakú':'Baku','Tiflis':'Tbilisi','Damasco':'Damascus','Amán':'Amman','Ciudad de Kuwait':'Kuwait City','Abu Dabi':'Abu Dhabi','Mascate':'Muscat','Saná':'Sanaa','Biskek':'Bishkek','Dusambé':'Dushanbe','Asjabad':'Ashgabat','Timbu':'Thimphu',
+'Ciudad de Túnez':'Tunis','Jartum':'Khartoum','Yuba':'Juba','Nuakchot':'Nouakchott','Uagadugú':'Ouagadougou','Conakri':'Conakry','Bisáu':'Bissau','Mogadiscio':'Mogadishu','Lilongüe':'Lilongwe','Santo Tomé':'São Tomé','Belmopán':'Belmopan','Nasáu':'Nassau','Puerto España':'Port of Spain','Nukualofa':"Nuku'alofa",
+'Madre Teresa de Calcuta':'Mother Teresa','Juan Pablo II':'John Paul II','Cristóbal Colón':'Christopher Columbus','Confucio':'Confucius','Aníbal':'Hannibal','Piotr Chaikovski':'Pyotr Tchaikovsky','Besanzón':'Besançon','Fráncfort':'Frankfurt','Hamburgo':'Hamburg','Venecia':'Venice','Génova':'Genoa','Vítebsk':'Vitebsk','Abiyán':'Abidjan','Zanzíbar':'Zanzibar','Tánger':'Tangier','Cartago':'Carthage','Klúshino':'Klushino','Johannesburgo':'Johannesburg','Sídney':'Sydney'
+};
+const ENART=new Set(['Estados Unidos','Reino Unido','Países Bajos','República Dominicana','Filipinas','RD Congo','Emiratos Árabes Unidos','República Centroafricana','República del Congo','Bahamas','Gambia','Comoras','Maldivas','Seychelles','Islas Salomón','Islas Marshall']);
+const ESX={'República Centroafricana':'la ','República del Congo':'la ','Emiratos Árabes Unidos':'los '};
+const ISO={'Argentina':'AR','Chile':'CL','Bolivia':'BO','Paraguay':'PY','Uruguay':'UY','Brasil':'BR','Perú':'PE','Ecuador':'EC','Colombia':'CO','Venezuela':'VE','México':'MX','Guatemala':'GT','Honduras':'HN','Nicaragua':'NI','Costa Rica':'CR','Panamá':'PA','El Salvador':'SV','Cuba':'CU','República Dominicana':'DO','Haití':'HT','Jamaica':'JM','Estados Unidos':'US','Canadá':'CA','Alemania':'DE','Francia':'FR','España':'ES','Portugal':'PT','Italia':'IT','Suiza':'CH','Austria':'AT','Bélgica':'BE','Países Bajos':'NL','Polonia':'PL','Chequia':'CZ','Eslovaquia':'SK','Hungría':'HU','Rumania':'RO','Bulgaria':'BG','Grecia':'GR','Serbia':'RS','Croacia':'HR','Ucrania':'UA','Reino Unido':'GB','Irlanda':'IE','Suecia':'SE','Noruega':'NO','Finlandia':'FI','Dinamarca':'DK','Bielorrusia':'BY','Rusia':'RU','Turquía':'TR','Irán':'IR','Irak':'IQ','Arabia Saudita':'SA','China':'CN','Japón':'JP','Corea del Sur':'KR','Tailandia':'TH','Vietnam':'VN','Indonesia':'ID','Filipinas':'PH','Camboya':'KH','Malasia':'MY','Laos':'LA','Mongolia':'MN','Myanmar':'MM','India':'IN','Pakistán':'PK','Bangladés':'BD','Nepal':'NP','Afganistán':'AF','Kazajistán':'KZ','Uzbekistán':'UZ','Egipto':'EG','Marruecos':'MA','Argelia':'DZ','Libia':'LY','Nigeria':'NG','Ghana':'GH','Senegal':'SN','Costa de Marfil':'CI','Malí':'ML','Níger':'NE','Chad':'TD','Camerún':'CM','Etiopía':'ET','Kenia':'KE','Tanzania':'TZ','Uganda':'UG','Sudáfrica':'ZA','Angola':'AO','Mozambique':'MZ','Zambia':'ZM','Zimbabue':'ZW','Botsuana':'BW','Namibia':'NA','RD Congo':'CD','Madagascar':'MG','Australia':'AU','Nueva Zelanda':'NZ','Albania':'AL','Andorra':'AD','Bosnia y Herzegovina':'BA','Chipre':'CY','Eslovenia':'SI','Estonia':'EE','Islandia':'IS','Letonia':'LV','Liechtenstein':'LI','Lituania':'LT','Luxemburgo':'LU','Malta':'MT','Moldavia':'MD','Mónaco':'MC','Montenegro':'ME','Macedonia del Norte':'MK','San Marino':'SM','Ciudad del Vaticano':'VA','Armenia':'AM','Azerbaiyán':'AZ','Georgia':'GE','Siria':'SY','Jordania':'JO','Líbano':'LB','Israel':'IL','Kuwait':'KW','Catar':'QA','Baréin':'BH','Emiratos Árabes Unidos':'AE','Omán':'OM','Yemen':'YE','Corea del Norte':'KP','Kirguistán':'KG','Tayikistán':'TJ','Turkmenistán':'TM','Bután':'BT','Brunéi':'BN','Timor Oriental':'TL','Singapur':'SG','Maldivas':'MV','Sri Lanka':'LK','Túnez':'TN','Sudán':'SD','Sudán del Sur':'SS','Mauritania':'MR','Benín':'BJ','Togo':'TG','Burkina Faso':'BF','Liberia':'LR','Sierra Leona':'SL','Guinea':'GN','Guinea-Bisáu':'GW','Gambia':'GM','Cabo Verde':'CV','Eritrea':'ER','Yibuti':'DJ','Somalia':'SO','Ruanda':'RW','Burundi':'BI','Malaui':'MW','Esuatini':'SZ','Lesoto':'LS','Gabón':'GA','Guinea Ecuatorial':'GQ','Santo Tomé y Príncipe':'ST','República Centroafricana':'CF','República del Congo':'CG','Comoras':'KM','Mauricio':'MU','Seychelles':'SC','Guyana':'GY','Surinam':'SR','Belice':'BZ','Bahamas':'BS','Barbados':'BB','Trinidad y Tobago':'TT','Granada':'GD','Santa Lucía':'LC','San Vicente y las Granadinas':'VC','Dominica':'DM','Antigua y Barbuda':'AG','San Cristóbal y Nieves':'KN','Papúa Nueva Guinea':'PG','Fiyi':'FJ','Islas Salomón':'SB','Vanuatu':'VU','Samoa':'WS','Tonga':'TO','Kiribati':'KI','Tuvalu':'TV','Nauru':'NR','Palaos':'PW','Micronesia':'FM','Islas Marshall':'MH'};
+const flag=id=>ISO[id]?[...ISO[id]].map(c=>String.fromCodePoint(127397+c.charCodeAt(0))).join(''):'🏳️';
+const tr=s=>LANG==='en'?(EN[s]||s):s;
+const the=id=>LANG==='en'?(ENART.has(id)?'the ':'')+tr(id):((byName[id]&&byName[id].ar)||ESX[id]||'')+id;
+const ofB=id=>LANG==='en'?`of <b>${the(id)}</b>`:(byName[id]&&byName[id].ar==='el '?`del <b>${id}</b>`:`de <b>${the(id)}</b>`);
+const ofP=id=>LANG==='en'?`of ${the(id)}`:(byName[id]&&byName[id].ar==='el '?`del ${id}`:`de ${the(id)}`);
+const amb=(a,b)=>(a.amb||[]).includes(b.n)||(b.amb||[]).includes(a.n);
+const firm=d=>(d.nb||[]).filter(n=>!amb(d,byName[n]||{n}));
+const pool=d=>{const gs=[d.g,...(d.x||[])];return D.filter(o=>o!==d&&gs.includes(o.g))};
+const contPool=d=>D.filter(o=>o!==d&&o.c===d.c);
+const fmtP=p=>{
+  if(p<0.01)return Math.round(p*1e6).toLocaleString(LANG==='en'?'en-US':'es-AR');
+  if(p<1)return Math.round(p*1000)+(LANG==='en'?' K':' mil');
+  return (p>=10?String(Math.round(p)):String(Math.round(p*10)/10).replace('.',LANG==='en'?'.':','))+' M';
+};
+const fmtA=a=>{
+  const dc=LANG==='en'?'.':',';
+  if(a>=1000)return (a/1000).toFixed(1).replace('.',dc)+' M km²';
+  if(a>=1)return LANG==='en'?(Math.round(a)*1000).toLocaleString('en-US')+' km²':Math.round(a)+' mil km²';
+  const k=a*1000;return (k<10?k.toFixed(1).replace('.',dc):Math.round(k))+' km²';
+};
+const T2=(es,en)=>LANG==='en'?en:es;
+
+const CAT={
+  front:{tag:{es:'📍 Fronteras',en:'📍 Borders'},short:{es:'Fronteras',en:'Borders'},color:'#1AA7EC'},
+  pop:{tag:{es:'👥 Población',en:'👥 Population'},short:{es:'Población',en:'Population'},color:'#FF5FA2'},
+  born:{tag:{es:'🌎 ¿Dónde nació?',en:'🌎 Born where?'},short:{es:'Nacimientos',en:'Birthplaces'},color:'#A64DFF'},
+  cap:{tag:{es:'🏛️ Capitales',en:'🏛️ Capitals'},short:{es:'Capitales',en:'Capitals'},color:'#E08E0B'},
+  coast:{tag:{es:'🌊 Costas',en:'🌊 Coasts'},short:{es:'Costas',en:'Coasts'},color:'#12B3A0'},
+  euro:{tag:{es:'💶 El euro',en:'💶 The euro'},short:{es:'Euro',en:'Euro'},color:'#4F6DF5'},
+  area:{tag:{es:'📏 Tamaño',en:'📏 Size'},short:{es:'Tamaño',en:'Size'},color:'#FF7A2F'}
+};
+const CATS=Object.keys(CAT);
+const NOEURO=['Suecia','Dinamarca','Polonia','Suiza','Chequia','Hungría','Noruega','Reino Unido','Rumania','Islandia','Albania','Moldavia','Macedonia del Norte','Liechtenstein'];
+
+/* ---------- generadores ---------- */
+function decoyPool(X,filterFn){
+  let P=pool(X).filter(filterFn);
+  if(P.length<3){const s=new Set(P);contPool(X).filter(filterFn).forEach(o=>s.add(o));P=[...s]}
+  return P;
+}
+function gFrontYes(){
+  const X=pick(D.filter(d=>d.nb&&firm(d).length>=2)),nb=firm(X);
+  const inD=nb.filter(n=>byName[n]);
+  const ok=(inD.length&&Math.random()<.8)?pick(inD):pick(nb);
+  const P=decoyPool(X,o=>!X.nb.includes(o.n)&&!amb(X,o));
+  if(P.length<3)return null;
+  const ds=sample(P,3).map(o=>o.n);
+  return{k:'fy:'+X.n,cr:[X.n,ok],opts:[ok,...ds],ok,
+    q:()=>T2(`¿Cuál de estos países <b>limita por tierra</b> con ${the(X.n)}?`,`Which of these countries <b>shares a land border</b> with ${the(X.n)}?`),
+    d:()=>T2(`${cap(the(X.n))} y ${the(ok)} comparten frontera terrestre.`,`${cap(the(X.n))} and ${the(ok)} share a land border.`)};
+}
+function gFrontNot(){
+  const X=pick(D.filter(d=>d.nb&&firm(d).length>=3)),nb=firm(X);
+  const P=decoyPool(X,o=>!X.nb.includes(o.n)&&!amb(X,o));
+  if(!P.length)return null;
+  const ok=pick(P.filter(o=>o.g===X.g||(X.x||[]).includes(o.g)).concat(P)).n;
+  const inD=nb.filter(n=>byName[n]),rest=nb.filter(n=>!byName[n]);
+  const ds=sample(inD,3);
+  if(ds.length<3)ds.push(...sample(rest,3-ds.length));
+  if(ds.length<3)return null;
+  return{k:'fn:'+X.n,cr:[X.n,ok],opts:[ok,...ds],ok,
+    q:()=>T2(`¿Cuál de estos países <b class="no">NO</b> limita por tierra con ${the(X.n)}?`,`Which of these countries does <b class="no">NOT</b> share a land border with ${the(X.n)}?`),
+    d:()=>T2(`${cap(the(ok))} no tiene frontera terrestre con ${the(X.n)}. Sí comparten frontera: ${ds.map(the).join(', ')}.`,`${cap(the(ok))} has no land border with ${the(X.n)}. These do border it: ${ds.map(the).join(', ')}.`)};
+}
+function gPopThr(){
+  const Ns=[2,3,5,8,10,15,20,30,40,50,60,80,100,150,200,300];
+  for(let i=0;i<50;i++){
+    const more=Math.random()<.65,N=pick(Ns),cont=pick(['AM','EU','AS','AF']);
+    const P=D.filter(d=>d.p!=null&&d.c===cont);
+    const good=P.filter(d=>more?(d.p>=N*1.2&&d.p<=N*5):(d.p<=N*.8&&d.p>=N/5));
+    const bad=P.filter(d=>more?(d.p<=N*.8&&d.p>=N/6):(d.p>=N*1.2&&d.p<=N*6));
+    if(good.length&&bad.length>=3){
+      const ok=pick(good),ds=sample(bad,3),all=[ok,...ds];
+      return{cr:[ok.n],opts:all.map(o=>o.n),ok:ok.n,
+        q:()=>T2(`¿Cuál de estos países tiene <b>${more?'más':'menos'} de ${N} millones</b> de habitantes?`,`Which of these countries has <b>${more?'more':'fewer'} than ${N} million</b> people?`),
+        d:()=>T2('Población aprox.: ','Approx. population: ')+all.map(o=>`${tr(o.n)} ${fmtP(o.p)}`).join(' · ')};
+    }
+  }
+  return null;
+}
+function gPopCmp(){
+  for(let i=0;i<50;i++){
+    const cont=pick(['AM','EU','AS','AF']),P=D.filter(d=>d.p!=null&&d.c===cont);
+    if(P.length<4)continue;
+    const S4=sample(P,4).sort((a,b)=>b.p-a.p),more=Math.random()<.6;
+    let ok;
+    if(more){if(S4[0].p/S4[1].p<1.3)continue;ok=S4[0]}else{if(S4[2].p/S4[3].p<1.3)continue;ok=S4[3]}
+    return{cr:[ok.n],opts:S4.map(o=>o.n),ok:ok.n,
+      q:()=>T2(`¿Cuál de estos países tiene <b>${more?'más':'menos'} habitantes</b>?`,`Which of these countries has the <b>${more?'largest':'smallest'} population</b>?`),
+      d:()=>T2('Población aprox.: ','Approx. population: ')+S4.map(o=>`${tr(o.n)} ${fmtP(o.p)}`).join(' · ')};
+  }
+  return null;
+}
+function gArea(){
+  for(let i=0;i<50;i++){
+    const cont=pick(['AM','EU','AS','AF']),P=D.filter(d=>d.a!=null&&d.c===cont);
+    if(P.length<4)continue;
+    const S4=sample(P,4).sort((a,b)=>b.a-a.a),more=Math.random()<.6;
+    let ok;
+    if(more){if(S4[0].a/S4[1].a<1.4)continue;ok=S4[0]}else{if(S4[2].a/S4[3].a<1.4)continue;ok=S4[3]}
+    return{cr:[ok.n],opts:S4.map(o=>o.n),ok:ok.n,
+      q:()=>T2(`¿Cuál de estos países tiene <b>${more?'mayor':'menor'} superficie</b>?`,`Which of these countries has the <b>${more?'largest':'smallest'} area</b>?`),
+      d:()=>T2('Superficie aprox.: ','Approx. area: ')+S4.map(o=>`${tr(o.n)} ${fmtA(o.a)}`).join(' · ')};
+  }
+  return null;
+}
+function gBorn(){
+  const [name,cn,place]=pick(PEOPLE),X=byName[cn];
+  if(!X)return null;
+  const P=decoyPool(X,()=>true);
+  if(P.length<3)return null;
+  const ds=sample(P,3).map(o=>o.n);
+  return{k:'b:'+name,cr:[cn],opts:[cn,...ds],ok:cn,
+    q:()=>T2(`¿En cuál de estos países nació <b>${tr(name)}</b>?`,`In which of these countries was <b>${tr(name)}</b> born?`),
+    d:()=>T2(`${name} nació en ${place}, ${the(cn)}.`,`${tr(name)} was born in ${tr(place)}, ${tr(cn)}.`)};
+}
+function gCap(){
+  const X=pick(D.filter(d=>d.cap&&d.cap!==d.n));
+  let ds;
+  if(X.cd)ds=sample(X.cd,3);
+  else{
+    const caps=[...new Set(decoyPool(X,o=>o.cap&&o.cap!==X.cap).map(o=>o.cap))];
+    if(caps.length<3)return null;
+    ds=sample(caps,3);
+  }
+  return{k:'c:'+X.n,cr:[X.n],opts:[X.cap,...ds],ok:X.cap,
+    q:()=>T2(`¿Cuál es la capital ${ofB(X.n)}?`,`What is the capital ${ofB(X.n)}?`),
+    d:()=>T2(`La capital ${ofP(X.n)} es ${X.cap}.`,`The capital ${ofP(X.n)} is ${tr(X.cap)}.`)};
+}
+function gCoast(){
+  const not=Math.random()<.6;
+  const cont=pick(not?['AM','EU','AS','AF']:['EU','AS','AF']);
+  const Ld=D.filter(d=>d.ll===1&&d.c===cont),K=D.filter(d=>d.ll===0&&d.c===cont);
+  if(not){
+    if(!Ld.length)return null;
+    const ok=pick(Ld);
+    let PK=K.filter(d=>d.g===ok.g||(ok.x||[]).includes(d.g));
+    if(PK.length<3)PK=K;
+    if(PK.length<3)return null;
+    const ds=sample(PK,3);
+    return{cr:[ok.n],opts:[ok.n,...ds.map(o=>o.n)],ok:ok.n,
+      q:()=>T2(`¿Cuál de estos países <b class="no">NO</b> tiene salida al mar?`,`Which of these countries has <b class="no">NO</b> coastline?`),
+      d:()=>T2(`${cap(the(ok.n))} no tiene salida al mar. ${ds.map(o=>the(o.n)).join(', ')} sí tienen costa.`,`${cap(the(ok.n))} is landlocked. ${ds.map(o=>the(o.n)).join(', ')} all have a coastline.`)};
+  }
+  if(Ld.length<3||!K.length)return null;
+  const ok=pick(K),ds=sample(Ld,3);
+  return{cr:[ok.n],opts:[ok.n,...ds.map(o=>o.n)],ok:ok.n,
+    q:()=>T2(`¿Cuál de estos países <b>tiene salida al mar</b>?`,`Which of these countries <b>has a coastline</b>?`),
+    d:()=>T2(`${cap(the(ok.n))} tiene costa. ${ds.map(o=>the(o.n)).join(', ')} no tienen salida al mar.`,`${cap(the(ok.n))} has a coastline. ${ds.map(o=>the(o.n)).join(', ')} are landlocked.`)};
+}
+function gEuro(){
+  const E=D.filter(d=>d.eu===1),N=D.filter(d=>NOEURO.includes(d.n));
+  if(Math.random()<.5){
+    const ok=pick(N),ds=sample(E,3);
+    return{cr:[ok.n],opts:[ok.n,...ds.map(o=>o.n)],ok:ok.n,
+      q:()=>T2(`¿Cuál de estos países <b class="no">NO</b> usa el euro como moneda?`,`Which of these countries does <b class="no">NOT</b> use the euro?`),
+      d:()=>T2(`${cap(the(ok.n))} no usa el euro. ${ds.map(o=>the(o.n)).join(', ')} sí lo usan.`,`${cap(the(ok.n))} does not use the euro. ${ds.map(o=>the(o.n)).join(', ')} do.`)};
+  }
+  const ok=pick(E),ds=sample(N,3);
+  return{cr:[ok.n],opts:[ok.n,...ds.map(o=>o.n)],ok:ok.n,
+    q:()=>T2(`¿Cuál de estos países <b>usa el euro</b> como moneda?`,`Which of these countries <b>uses the euro</b>?`),
+    d:()=>T2(`${cap(the(ok.n))} usa el euro (€). ${ds.map(o=>the(o.n)).join(', ')} mantienen su propia moneda.`,`${cap(the(ok.n))} uses the euro (€). ${ds.map(o=>the(o.n)).join(', ')} keep their own currency.`)};
+}
+const TYPES=[
+  {c:'front',w:2.5,f:gFrontYes},{c:'front',w:2.5,f:gFrontNot},
+  {c:'pop',w:1.5,f:gPopThr},{c:'pop',w:1,f:gPopCmp},
+  {c:'born',w:3,f:gBorn},{c:'cap',w:2.5,f:gCap},
+  {c:'coast',w:1.5,f:gCoast},{c:'euro',w:1,f:gEuro},{c:'area',w:1.5,f:gArea}
+];
+let S={seen:new Set(),lastCat:null};
+function weighted(list){
+  const tot=list.reduce((s,t)=>s+t.w,0);let r=Math.random()*tot;
+  for(const t of list){r-=t.w;if(r<=0)return t}
+  return list[0];
+}
+function makeQ(topic,depth=0){
+  const solo=topic&&topic!=='all',list=solo?TYPES.filter(t=>t.c===topic):TYPES;
+  for(let t=0;t<120;t++){
+    const T=weighted(list);
+    if(!solo&&T.c===S.lastCat&&Math.random()<.75)continue;
+    const q=T.f();
+    if(!q||new Set(q.opts).size!==4)continue;
+    const key=T.c+'|'+(q.k||q.opts.slice().sort().join(','))+'|'+q.ok;
+    if(S.seen.has(key))continue;
+    S.seen.add(key);S.lastCat=T.c;q.cat=T.c;return q;
+  }
+  S.seen.clear();
+  if(depth>3)throw new Error('no questions');
+  return makeQ(topic,depth+1);
+}
+/*DATA-END*/
+
+/* ================= utilidades ================= */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const ls={
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+};
+function shade(hex,p){
+  const n=parseInt(hex.slice(1),16),f=1-p;
+  return '#'+[n>>16,(n>>8)&255,n&255].map(v=>Math.round(v*f).toString(16).padStart(2,'0')).join('');
+}
+function setBg(hex){
+  const st=document.documentElement.style;
+  st.setProperty('--bg',hex);st.setProperty('--bg-d1',shade(hex,.22));st.setProperty('--bg-d2',shade(hex,.40));
+  const m=$('meta[name=theme-color]');if(m)m.setAttribute('content',hex);
+}
+
+/* ================= idioma ================= */
+const UI={
+ es:{tagline:'¿Cuánto sabés del mundo?',pick_mode:'Cantidad de preguntas de la ronda',play:'▶ Jugar',points:'PUNTOS',correct_l:'aciertos',streak_l:'racha',acc_l:'precisión',
+  home:'🏠 Inicio',again:'↻ Otra vez',choose:'Elegí una opción 👆',next:'Siguiente ▶',result:'Ver resultado 🏆',
+  m10:'10 preguntas',m20:'20 preguntas',m50:'50 preguntas',minf:'Infinito · 3 vidas',
+  ach_title:'Logros',tab_gen:'General',tab_cat:'Temáticas',tab_col:'Colección',
+  t_all:'Todas',t_lock:'🔒 Temáticas',t_off:'Sin límite',timeup:'¡Se acabó el tiempo! Era ',timer_hint:'Tiempo por pregunta',
+  ach_unlocked:'¡Logro desbloqueado!',lvl_up:'¡Subiste de nivel!',level:'Nivel',reward:'Recompensa',max:'¡COMPLETO!',new_tag:'¡NUEVO!',
+  newrec:'🆕 ¡Nuevo récord!',best:'🏆 Récord: ',
+  end_a:'¡Sos un crack del mapa!',end_b:'¡Muy bien, explorador!',end_c:'¡A seguir viajando!',
+  right:'¡Correcto! 🎉',wrong:'¡Uy! Era ',
+  sound:'Sonido',achievements:'Logros',back:'Volver',joker:'Comodín 50/50',
+  c_countries:'🌍 Países',c_avatars:'🙂 Avatares',c_themes:'🎨 Fondos',c_titles:'🏷️ Títulos',c_modes:'🔓 Contenido',
+  auto:'Automático (por nivel)',locked_by:'Se gana con',collect_hint:'Acertá preguntas sobre este país para coleccionarlo',
+  mode50:'Modo 50 preguntas',topics:'Práctica por temática',jk_gain:'comodín',
+  why_unl:'Abre contenido que antes no existía para vos: una forma nueva de jugar.',
+  why_th:'Cambia el color de tu pantalla de inicio: cada visita se siente nueva y propia.',
+  why_av:'Cosmético exclusivo: solo lo luce quien llegó hasta acá, y se ve en tu perfil.',
+  why_tt:'Reconocimiento: tu título cuenta tu trayectoria cada vez que abrís el juego.',
+  why_jk:'Un comodín te anima a arriesgar rachas más largas sin miedo a perderlo todo.',
+  why_xp:'Te acerca al próximo nivel: siempre hay una meta a pocos aciertos.',
+  jk_none:'No tenés comodines. ¡Ganalos con rachas de 3 aciertos!',streak_jk:'¡3 aciertos seguidos! +1 comodín ✂️'},
+ en:{tagline:'How much do you know about the world?',pick_mode:'Questions per round',play:'▶ Play',points:'POINTS',correct_l:'correct',streak_l:'streak',acc_l:'accuracy',
+  home:'🏠 Home',again:'↻ Again',choose:'Pick an option 👆',next:'Next ▶',result:'See result 🏆',
+  m10:'10 questions',m20:'20 questions',m50:'50 questions',minf:'Endless · 3 lives',
+  ach_title:'Achievements',tab_gen:'General',tab_cat:'Topics',tab_col:'Collection',
+  t_all:'All',t_lock:'🔒 Topics',t_off:'No limit',timeup:"Time's up! It was ",timer_hint:'Time per question',
+  ach_unlocked:'Achievement unlocked!',lvl_up:'Level up!',level:'Level',reward:'Reward',max:'COMPLETE!',new_tag:'NEW!',
+  newrec:'🆕 New record!',best:'🏆 Best: ',
+  end_a:"You're a map genius!",end_b:'Nice one, explorer!',end_c:'Keep on traveling!',
+  right:'Correct! 🎉',wrong:'Oops! It was ',
+  sound:'Sound',achievements:'Achievements',back:'Back',joker:'50/50 joker',
+  c_countries:'🌍 Countries',c_avatars:'🙂 Avatars',c_themes:'🎨 Backgrounds',c_titles:'🏷️ Titles',c_modes:'🔓 Content',
+  auto:'Automatic (by level)',locked_by:'Earned with',collect_hint:'Answer questions about this country to collect it',
+  mode50:'50-question mode',topics:'Topic practice',jk_gain:'joker',
+  why_unl:'Opens content that did not exist for you before: a brand-new way to play.',
+  why_th:'Changes your home screen color: every visit feels new and yours.',
+  why_av:'Exclusive cosmetic: only players who got this far wear it, shown on your profile.',
+  why_tt:'Recognition: your title tells your story every time you open the game.',
+  why_jk:'A joker lets you chase longer streaks without fear of losing everything.',
+  why_xp:'Brings you closer to the next level: there is always a goal a few answers away.',
+  jk_none:"You're out of jokers. Earn them with 3-in-a-row streaks!",streak_jk:'3 in a row! +1 joker ✂️'}
+};
+const t=k=>UI[LANG][k];
+const LVT=[[1,'Turista','Tourist'],[3,'Mochilero','Backpacker'],[5,'Viajero','Traveler'],[8,'Explorador','Explorer'],[12,'Navegante','Navigator'],[16,'Piloto','Pilot'],[20,'Embajador','Ambassador'],[25,'Maestro del mapa','Map Master']];
+const THEMES=[
+ {id:'green',c:'#4FB52A',es:'Pradera',en:'Meadow'},{id:'ocean',c:'#1AA7EC',es:'Océano',en:'Ocean'},{id:'sunset',c:'#E8645A',es:'Atardecer',en:'Sunset'},
+ {id:'lagoon',c:'#12B3A0',es:'Laguna',en:'Lagoon'},{id:'neon',c:'#D946EF',es:'Neón',en:'Neon'},{id:'royal',c:'#4F6DF5',es:'Real',en:'Royal'},{id:'candy',c:'#FF5FA2',es:'Chicle',en:'Bubblegum'},
+ {id:'sky',c:'#0EA5E9',es:'Cielo',en:'Sky'},{id:'lava',c:'#E11D74',es:'Lava',en:'Lava'}
+];
+const AVATARS=['🌎','🧭','🦉','👑','🚀','🦅','🗺️','🐲','🛂','📊','🎭','🏙️','⚓','🏰','📐','⏱️','⚡','🏎️','⏳','🧊'];
+
+/* ================= estado guardado ================= */
+const DEF=()=>({xp:0,jk:1,games:0,answers:0,correct:0,bestStreak:0,perfect:0,dayStreak:0,lastDay:'',marathon:0,tgames:0,tcorrect:0,tfast:0,tclutch:0,tcold:0,cat:{},col:[],ach:{},seen:{},avs:['🌎'],ths:['green'],ttl:[],av:'🌎',th:'green',tt:'auto',unl:{}});
+let ST=DEF();
+try{const raw=ls.get('geotrivia.save.v1',null);if(raw){const o=JSON.parse(raw);ST=Object.assign(DEF(),o);ST.unl=o.unl||{}}}catch(e){ST=DEF()}
+function save(){ls.set('geotrivia.save.v1',JSON.stringify(ST))}
+LANG=ls.get('geotrivia.lang',(navigator.language||'es').toLowerCase().startsWith('en')?'en':'es');
+if(LANG!=='en'&&LANG!=='es')LANG='es';
+
+/* ================= logros ================= */
+const MED=['🥉','🥈','🥇'];
+const ACH=[
+ {id:'games',k:'games',grp:'g',ic:'🎮',es:'Primeros pasos',en:'First steps',ds:['Jugá {n} partidas','Play {n} games'],th:[1,10,50],rw:[{xp:20},{xp:30,unl:'m50'},{xp:60,av:'🧭'}]},
+ {id:'correct',k:'correct',grp:'g',ic:'✅',es:'Sabelotodo',en:'Know-it-all',ds:['Acertá {n} preguntas en total','Answer {n} questions correctly'],th:[10,100,500],rw:[{xp:30},{jk:1,unl:'topics'},{xp:80,av:'🦉',tt:1}]},
+ {id:'streak',k:'streak',grp:'g',ic:'🔥',es:'En racha',en:'On fire',ds:['Encadená {n} aciertos seguidos','Chain {n} correct answers in a row'],th:[3,7,15],rw:[{xp:30},{jk:1},{xp:80,th:'sunset'}]},
+ {id:'perfect',k:'perfect',grp:'g',ic:'💎',es:'Impecable',en:'Flawless',ds:['Terminá {n} partidas de 10+ preguntas sin errores','Finish {n} games of 10+ questions with no mistakes'],th:[1,5,15],rw:[{jk:1},{xp:60,th:'ocean'},{xp:100,av:'👑',tt:1}]},
+ {id:'day',k:'day',grp:'g',ic:'📅',es:'Constancia',en:'Dedication',ds:['Jugá {n} días seguidos','Play {n} days in a row'],th:[2,5,14],rw:[{xp:20},{jk:2,th:'candy'},{xp:100,av:'🚀',tt:1}]},
+ {id:'col',k:'col',grp:'g',ic:'🗺️',es:'Coleccionista',en:'Collector',ds:['Reuní {n} países en tu colección','Collect {n} countries'],th:[15,60,150],rw:[{xp:30},{xp:60,th:'lagoon'},{xp:120,av:'🗺️',tt:1}]},
+ {id:'marathon',k:'marathon',grp:'g',ic:'♾️',es:'Maratonista',en:'Marathoner',ds:['Acertá {n} en una sola partida infinita','Get {n} right in a single endless run'],th:[10,25,50],rw:[{xp:30},{jk:2},{xp:100,th:'neon',tt:1,av:'🐲'}]},
+ {id:'level',k:'level',grp:'g',ic:'⭐',es:'Ascenso',en:'Level up',ds:['Llegá al nivel {n}','Reach level {n}'],th:[3,8,15],rw:[{jk:1},{av:'🦅',jk:1},{th:'royal',tt:1}]}
+];
+ACH.push(
+ {id:'t_games',k:'tgames',grp:'g',ic:'⏱️',es:'Contrarreloj',en:'Against the clock',ds:['Terminá {n} partidas en modo timer','Finish {n} timed games'],th:[1,5,25],rw:[{xp:30},{jk:1,th:'sky'},{xp:80,av:'⏱️',tt:1}]},
+ {id:'t_correct',k:'tcorrect',grp:'g',ic:'⚡',es:'Reflejos',en:'Reflexes',ds:['Acertá {n} preguntas con el timer activado','Get {n} questions right with the timer on'],th:[10,50,200],rw:[{xp:30},{jk:1},{xp:90,av:'⚡',tt:1}]},
+ {id:'t_fast',k:'tfast',grp:'g',ic:'🏎️',es:'Relámpago',en:'Lightning',ds:['Acertá {n} veces en los primeros 3 segundos','Answer correctly {n} times within the first 3 seconds'],th:[5,25,100],rw:[{xp:30},{xp:60,jk:1},{xp:100,av:'🏎️',th:'lava',tt:1}]},
+ {id:'t_clutch',k:'tclutch',grp:'g',ic:'⏳',es:'Al límite',en:'Photo finish',ds:['Acertá {n} veces con menos de 1 segundo restante','Get {n} right with under 1 second left'],th:[1,5,15],rw:[{xp:25},{jk:1},{xp:80,av:'⏳',tt:1}]},
+ {id:'t_cold',k:'tcold',grp:'g',ic:'🧊',es:'Sangre fría',en:'Cool head',ds:['Lográ {n} aciertos seguidos con el timer en 5 s','Reach {n} correct in a row with the timer on 5 s'],th:[3,7,15],rw:[{xp:40},{jk:2},{xp:120,av:'🧊',tt:1}]}
+);
+[['front','🧭','Cartógrafo','Cartographer','fronteras','borders','🛂',[10,30,80]],
+ ['pop','👥','Demógrafo','Demographer','población','population','📊',[10,30,80]],
+ ['born','🎭','Biógrafo','Biographer','nacimientos','birthplaces','🎭',[10,30,80]],
+ ['cap','🏙️','Experto en capitales','Capital expert','capitales','capitals','🏙️',[10,30,80]],
+ ['coast','⚓','Lobo de mar','Sea wolf','costas','coasts','⚓',[6,15,35]],
+ ['euro','💶','Eurófilo','Eurofile','euro','euro','🏰',[6,15,35]],
+ ['area','📏','Topógrafo','Surveyor','tamaño','size','📐',[8,20,50]]
+].forEach(([k,ic,es,en,ce,cen,av,th])=>ACH.push({id:'c_'+k,k,grp:'c',ic,es,en,ds:['Acertá {n} preguntas de '+ce,'Get {n} '+cen+' questions right'],th,rw:[{xp:25},{jk:1},{xp:70,av,tt:1}]}));
+const achName=a=>a[LANG];
+const achDesc=(a,n)=>a.ds[LANG==='en'?1:0].replace('{n}',n);
+const lvlThr=L=>40*(L-1)*L;
+function lvlOf(xp){let L=1;while(xp>=lvlThr(L+1))L++;return L}
+const lvlTitle=L=>{let r=LVT[0];LVT.forEach(x=>{if(L>=x[0])r=x});return LANG==='en'?r[2]:r[1]};
+function metric(a){
+  switch(a.k){
+    case'games':return ST.games;case'correct':return ST.correct;case'streak':return ST.bestStreak;case'perfect':return ST.perfect;
+    case'day':return ST.dayStreak;case'col':return ST.col.length;case'marathon':return ST.marathon;case'level':return lvlOf(ST.xp);
+    case'tgames':return ST.tgames;case'tcorrect':return ST.tcorrect;case'tfast':return ST.tfast;case'tclutch':return ST.tclutch;case'tcold':return ST.tcold;
+    default:return ST.cat[a.k]||0;
+  }
+}
+const themeById=id=>THEMES.find(x=>x.id===id)||THEMES[0];
+const homeBg=()=>themeById(ST.th).c;
+function rewardText(r){
+  const p=[];
+  if(r.xp)p.push('+'+r.xp+' XP');
+  if(r.jk)p.push('+'+r.jk+' ✂️');
+  if(r.av)p.push(r.av+' '+(LANG==='en'?'avatar':'avatar'));
+  if(r.th)p.push('🎨 '+themeById(r.th)[LANG]);
+  if(r.tt)p.push('🏷️ '+(LANG==='en'?'title':'título'));
+  if(r.unl)p.push('🔓 '+(r.unl==='m50'?t('mode50'):t('topics')));
+  return p.join(' · ');
+}
+const whyOf=r=>r.unl?t('why_unl'):r.th?t('why_th'):r.av?t('why_av'):r.tt?t('why_tt'):r.jk?t('why_jk'):t('why_xp');
+function sourceOf(kind,val){
+  for(const a of ACH)for(let i=0;i<3;i++){const r=a.rw[i];
+    if(kind==='av'&&r.av===val)return[a,i];if(kind==='th'&&r.th===val)return[a,i];
+    if(kind==='tt'&&r.tt&&a.id===val)return[a,i];if(kind==='unl'&&r.unl===val)return[a,i];}
+  return null;
+}
+const lockMsg=(kind,val)=>{const s=sourceOf(kind,val);return s?t('locked_by')+' «'+achName(s[0])+'» '+MED[s[1]]:''};
+
+/* ================= toasts, sonido, confeti ================= */
+const toastBox=$('#toasts');
+function toast(ic,title,sub){
+  const el=document.createElement('div');el.className='toast';
+  el.innerHTML='<div class="ti"></div><div><b></b><span></span></div>';
+  el.querySelector('.ti').textContent=ic;el.querySelector('b').textContent=title;el.querySelector('span').textContent=sub||'';
+  toastBox.appendChild(el);while(toastBox.children.length>3)toastBox.firstChild.remove();
+  setTimeout(()=>el.remove(),3400);
+}
+let snd=ls.get('geotrivia.sound','1')!=='0',AC=null;
+function actx(){
+  if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(AC&&AC.state==='suspended')AC.resume();
+  return AC;
+}
+function tone(f,tm,d,type='triangle',v=.14){
+  const a=actx();if(!a)return;
+  const o=a.createOscillator(),g=a.createGain(),t0=a.currentTime+tm;
+  o.type=type;o.frequency.setValueAtTime(f,t0);
+  g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(v,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+  o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+.05);
+}
+const SFX={
+  click(){tone(520,0,.07,'triangle',.1)},
+  ok(){[523,659,784].forEach((f,i)=>tone(f,i*.08,.16))},
+  bad(){tone(220,0,.18,'sawtooth',.09);tone(150,.12,.25,'sawtooth',.09)},
+  streak(){[659,784,988,1319].forEach((f,i)=>tone(f,i*.07,.14))},
+  win(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.1,.22))},
+  tick(){tone(880,0,.05,'square',.05)},
+  ach(){[784,988,1175,1568].forEach((f,i)=>tone(f,i*.09,.2,'square',.07))}
+};
+function sfx(n){if(snd){try{SFX[n]()}catch(e){}}}
+function paintSnd(){$$('.snd').forEach(b=>b.textContent=snd?'🔊':'🔇')}
+$$('.snd').forEach(b=>b.addEventListener('click',()=>{snd=!snd;ls.set('geotrivia.sound',snd?'1':'0');paintSnd();sfx('click')}));
+paintSnd();
+const fx=$('#fx');
+function confetti(list,n){
+  if(reduce)return;
+  for(let i=0;i<n;i++){
+    const s=document.createElement('span');
+    s.className='cf';s.textContent=pick(list);
+    s.style.left=Math.random()*100+'vw';
+    s.style.fontSize=(18+Math.random()*18)+'px';
+    s.style.animationDuration=(1.1+Math.random()*.9)+'s';
+    s.style.animationDelay=(Math.random()*.25)+'s';
+    s.style.setProperty('--dx',(Math.random()*80-40)+'px');
+    fx.appendChild(s);setTimeout(()=>s.remove(),2600);
+  }
+}
+
+/* ================= progreso: XP, logros ================= */
+let G=null;
+function addXp(n){
+  if(!n)return;
+  const before=lvlOf(ST.xp);ST.xp+=n;const after=lvlOf(ST.xp);
+  if(after>before){toast('⬆️',t('lvl_up'),t('level')+' '+after+' · '+lvlTitle(after));sfx('ach');confetti(['⭐','🎉'],14)}
+}
+function grant(a,i){
+  const r=a.rw[i];
+  if(r.jk)ST.jk+=r.jk;
+  if(r.av&&!ST.avs.includes(r.av))ST.avs.push(r.av);
+  if(r.th&&!ST.ths.includes(r.th))ST.ths.push(r.th);
+  if(r.tt&&!ST.ttl.includes(a.id))ST.ttl.push(a.id);
+  if(r.unl)ST.unl[r.unl]=true;
+  addXp(r.xp);
+  if(G)G.newA=(G.newA||0)+1;
+  toast(a.ic,t('ach_unlocked')+' '+MED[i],achName(a)+' · '+rewardText(r));
+  sfx('ach');confetti(['🏅','⭐','🎉'],18);
+}
+function checkAch(){
+  let loop=0,changed;
+  do{
+    changed=false;
+    ACH.forEach(a=>{
+      const m=metric(a),cur=ST.ach[a.id]||0;let nt=0;
+      a.th.forEach((x,i)=>{if(m>=x)nt=i+1});
+      if(nt>cur){ST.ach[a.id]=nt;for(let i=cur;i<nt;i++)grant(a,i);changed=true}
+    });
+  }while(changed&&++loop<4);
+  paintBadges();
+}
+const unseen=()=>ACH.reduce((s,a)=>s+Math.max(0,(ST.ach[a.id]||0)-(ST.seen[a.id]||0)),0);
+function paintBadges(){
+  const n=unseen(),d=$('#achDot');d.hidden=n<1;d.textContent=n;
+}
+function nextTarget(){
+  let best=null,br=-1;
+  ACH.forEach(a=>{const c=ST.ach[a.id]||0;if(c>=3)return;const r=Math.min(1,metric(a)/a.th[c]);if(r>br){br=r;best={a,c,m:metric(a),tg:a.th[c],r}}});
+  return best;
+}
+
+/* ================= navegación ================= */
+function show(id,bg){
+  $$('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  setBg(bg||homeBg());
+}
+
+/* ================= inicio ================= */
+let MODE=ls.get('geotrivia.mode','10');
+let TOPIC='all';
+let TIMER=+ls.get('geotrivia.timer','0')||0;if(![0,5,10,15].includes(TIMER))TIMER=0;
+const modeOK=m=>m!=='50'||ST.unl.m50;
+if(!['10','20','50','inf'].includes(MODE)||!modeOK(MODE))MODE='10';
+const bestKey=()=>'geotrivia.best.'+MODE+(TOPIC!=='all'?'.'+TOPIC:'')+(TIMER?'.t'+TIMER:'');
+const bestOf=()=>+ls.get(bestKey(),'0')||0;
+function paintHome(){
+  $$('#modes .chip').forEach(c=>{
+    const m=c.dataset.mode,lock=!modeOK(m);
+    c.classList.toggle('on',m===MODE);c.classList.toggle('lock',lock);
+    c.textContent=lock?'🔒 '+m:(m==='inf'?'♾️':m);
+  });
+  $('#modeHint').textContent=t('m'+(MODE==='inf'?'inf':MODE))+(TIMER?' · ⏱️ '+TIMER+' s':'');
+  const tmb=$('#timerBtn');tmb.classList.toggle('timeron',TIMER>0);tmb.textContent='⏱️ '+(TIMER?TIMER+' s':t('t_off'));tmb.setAttribute('aria-label',t('timer_hint'));
+  $('#modeBest').textContent='🏆 '+bestOf();
+  const tb=$('#topicBtn');
+  tb.classList.toggle('lock',!ST.unl.topics);
+  tb.textContent=ST.unl.topics?'📚 '+(TOPIC==='all'?t('t_all'):CAT[TOPIC].tag[LANG]):t('t_lock');
+  const L=lvlOf(ST.xp);
+  $('#plAv').textContent=ST.av;
+  $('#plTxt').textContent=ttlName()+' · '+t('level')+' '+L;
+  $('#plXp').style.width=Math.round((ST.xp-lvlThr(L))/(lvlThr(L+1)-lvlThr(L))*100)+'%';
+  const nt=nextTarget(),na=$('#nextAch');
+  na.hidden=!nt;
+  if(nt){$('#naTxt').textContent=nt.a.ic+' '+achName(nt.a)+' '+nt.m+'/'+nt.tg;$('#naBar').style.width=Math.round(nt.r*100)+'%'}
+  paintBadges();
+}
+function ttlName(){
+  if(ST.tt!=='auto'&&ST.ttl.includes(ST.tt)){const a=ACH.find(x=>x.id===ST.tt);if(a)return achName(a)}
+  return lvlTitle(lvlOf(ST.xp));
+}
+$$('#modes .chip').forEach(c=>c.addEventListener('click',()=>{
+  const m=c.dataset.mode;
+  if(!modeOK(m)){toast('🔒',t('mode50'),lockMsg('unl','m50'));sfx('bad');return}
+  MODE=m;ls.set('geotrivia.mode',MODE);paintHome();sfx('click');
+}));
+$('#timerBtn').addEventListener('click',()=>{
+  const l=[0,5,10,15];TIMER=l[(l.indexOf(TIMER)+1)%l.length];ls.set('geotrivia.timer',String(TIMER));paintHome();sfx('click');
+});
+$('#topicBtn').addEventListener('click',()=>{
+  if(!ST.unl.topics){toast('🔒',t('topics'),lockMsg('unl','topics'));sfx('bad');return}
+  const list=['all',...CATS];TOPIC=list[(list.indexOf(TOPIC)+1)%list.length];
+  if(TOPIC!=='all')setBg(CAT[TOPIC].color);else setBg(homeBg());
+  paintHome();sfx('click');
+});
+
+/* ================= juego ================= */
+const total=()=>G.mode==='inf'?Infinity:+G.mode;
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function touchDay(){
+  const td=today();if(ST.lastDay===td)return;
+  const y=new Date();y.setDate(y.getDate()-1);
+  const ys=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+  ST.dayStreak=ST.lastDay===ys?ST.dayStreak+1:1;ST.lastDay=td;
+}
+function start(){
+  G={mode:MODE,topic:TOPIC,tm:TIMER,i:0,score:0,ok:0,streak:0,maxStreak:0,lives:3,q:null,done:false,jUsed:false,xp0:ST.xp,newA:0};
+  S={seen:new Set(),lastCat:null};
+  touchDay();checkAch();save();
+  show('game');nextQ();
+}
+function hud(){
+  $('#score').textContent='⭐ '+G.score;
+  $('#barFill').style.width=(G.mode==='inf'?(G.i%10)/10*100:G.i/total()*100)+'%';
+  $('#cnt').textContent=G.mode==='inf'?'❤️'.repeat(G.lives)+'🖤'.repeat(3-G.lives):(Math.min(G.i+1,total()))+'/'+total();
+  $('#streak').textContent=G.streak>=2?'🔥 '+G.streak:'';
+  const j=$('#btnJoker');j.textContent='✂️ '+ST.jk;j.disabled=G.done||G.jUsed||ST.jk<1;
+}
+let TM=null;
+function timerStop(){if(TM){clearInterval(TM.id);TM=null}}
+function paintTimer(){
+  if(!TM)return;
+  const f=TM.left/TM.tot;
+  $('#tfill').style.width=Math.max(0,f*100)+'%';
+  $('#tnum').textContent=Math.ceil(TM.left/1000)+' s';
+  const b=$('#tbar');b.classList.toggle('low',TM.left<=3000);b.classList.toggle('mid',TM.left>3000&&f<=.5);
+}
+function timerStart(sec){
+  timerStop();
+  const b=$('#tbar');
+  if(!sec){b.hidden=true;return}
+  b.hidden=false;b.classList.remove('low','mid');
+  const tot=sec*1000;
+  TM={tot,left:tot,last:performance.now(),sec:sec,id:setInterval(tick,100)};
+  paintTimer();
+}
+function tick(){
+  if(!TM)return;
+  const now=performance.now();let dt=now-TM.last;TM.last=now;
+  if(document.hidden)return;
+  const before=Math.ceil(TM.left/1000);
+  TM.left-=Math.min(dt,250);
+  if(TM.left<=0){TM.left=0;paintTimer();timerStop();if(G&&!G.done)answer(null);return}
+  const after=Math.ceil(TM.left/1000);
+  if(after!==before&&after<=3)sfx('tick');
+  paintTimer();
+}
+function nextQ(){
+  if(G.i>=total()||(G.mode==='inf'&&G.lives<=0))return finish();
+  const q=makeQ(G.topic);G.q=q;G.done=false;G.jUsed=false;
+  setBg(CAT[q.cat].color);
+  $('#tag').textContent=CAT[q.cat].tag[LANG];
+  $('#qtext').innerHTML=q.q();
+  $('#fb').className='fb';
+  const box=$('#opts');box.innerHTML='';
+  shuffle(q.opts).forEach((o,idx)=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='opt';b.dataset.v=o;
+    b.innerHTML='<span class="ltr"></span><span class="lab"></span><span class="mk"></span>';
+    b.querySelector('.ltr').textContent='ABCD'[idx];
+    b.querySelector('.lab').textContent=tr(o);
+    b.addEventListener('click',()=>answer(b));
+    box.appendChild(b);
+  });
+  const qc=$('#qcard');qc.classList.remove('in');void qc.offsetWidth;qc.classList.add('in');
+  const nx=$('#btnNext');nx.disabled=true;nx.textContent=t('choose');
+  hud();
+  timerStart(G.tm);
+}
+function useJoker(){
+  if(!G||G.done||G.jUsed)return;
+  if(ST.jk<1){toast('✂️',t('joker'),t('jk_none'));sfx('bad');return}
+  const wrong=$$('#opts .opt').filter(b=>b.dataset.v!==G.q.ok);
+  sample(wrong,2).forEach(b=>{b.classList.add('gone','lock');b.disabled=true});
+  ST.jk--;G.jUsed=true;save();sfx('click');hud();
+}
+function answer(btn){
+  if(!G||G.done)return;
+  G.done=true;
+  const tmLeft=TM?TM.left:null,timeout=!btn;
+  timerStop();
+  const q=G.q,good=!!btn&&btn.dataset.v===q.ok;
+  $$('#opts .opt').forEach(b=>{
+    b.classList.add('lock');
+    const isOk=b.dataset.v===q.ok;
+    if(isOk){b.classList.add('good');b.querySelector('.mk').textContent='✓'}
+    else if(b===btn){b.classList.add('bad');b.querySelector('.mk').textContent='✕'}
+    else if(!b.classList.contains('gone'))b.classList.add('dim');
+  });
+  G.i++;ST.answers++;
+  let fresh=null,jkWon=false,bonus=0;
+  if(good){
+    G.ok++;G.streak++;G.maxStreak=Math.max(G.maxStreak,G.streak);
+    G.score+=100+Math.min(G.streak-1,5)*20;
+    ST.correct++;ST.cat[q.cat]=(ST.cat[q.cat]||0)+1;
+    ST.bestStreak=Math.max(ST.bestStreak,G.streak);
+    if(G.streak%3===0){ST.jk++;jkWon=true;toast('✂️',t('streak_jk'),'');}
+    if(G.mode==='inf')ST.marathon=Math.max(ST.marathon,G.ok);
+    (q.cr||[]).forEach(id=>{if(byName[id]&&!ST.col.includes(id)){ST.col.push(id);fresh=fresh||id}});
+    addXp(G.tm?15:10);
+    if(G.tm&&tmLeft!=null){
+      const el=G.tm*1000-tmLeft;bonus=Math.round(tmLeft/(G.tm*1000)*50);G.score+=bonus;
+      ST.tcorrect++;if(el<=3000)ST.tfast++;if(tmLeft<1000)ST.tclutch++;
+      if(G.tm===5)ST.tcold=Math.max(ST.tcold,G.streak);
+    }
+    sfx(G.streak>=3?'streak':'ok');
+    confetti(['⭐','🎉','🌎'],G.streak>=3?26:10);
+  }else{
+    G.streak=0;if(G.mode==='inf')G.lives--;
+    sfx('bad');
+  }
+  const fb=$('#fb');
+  fb.className='fb show '+(good?'good':'bad');
+  $('#fbT').textContent=(good?t('right'):(timeout?'⏰ '+t('timeup'):t('wrong'))+tr(q.ok))+(bonus?' · ⚡+'+bonus:'')+(jkWon?' · +1 ✂️':'')+(fresh?' · 🆕 '+flag(fresh):'');
+  $('#fbD').textContent=q.d();
+  const sc=$('#score');sc.classList.remove('bump');void sc.offsetWidth;if(good)sc.classList.add('bump');
+  checkAch();save();
+  hud();
+  const last=G.i>=total()||(G.mode==='inf'&&G.lives<=0);
+  const nx=$('#btnNext');nx.disabled=false;nx.textContent=last?t('result'):t('next');
+}
+function finish(){
+  timerStop();
+  const acc=G.i?Math.round(G.ok/G.i*100):0;
+  const prev=bestOf(),isNew=G.score>prev&&G.score>0;
+  if(isNew)ls.set(bestKey(),String(G.score));
+  ST.games++;if(G.tm)ST.tgames++;
+  if(G.mode!=='inf'&&total()>=10&&G.ok===G.i){ST.perfect++;addXp(50)}
+  checkAch();save();
+  let emoji,title,bg;
+  if(acc>=80){emoji='🏆';title=t('end_a');bg='#4FB52A'}
+  else if(acc>=50){emoji='👏';title=t('end_b');bg='#1AA7EC'}
+  else{emoji='💪';title=t('end_c');bg='#E8645A'}
+  $('#endEmoji').textContent=emoji;$('#endTitle').textContent=title;
+  $('#endScore').textContent=G.score;$('#endOk').textContent=G.ok+'/'+G.i;
+  $('#endStreak').textContent=G.maxStreak;$('#endAcc').textContent=acc+'%';
+  const rec=$('#endRec');
+  rec.textContent=isNew?t('newrec'):t('best')+Math.max(prev,0);
+  rec.className='rec'+(isNew?' new':'');
+  $('#endGain').textContent='+'+(ST.xp-G.xp0)+' XP'+(G.newA?' · 🏅 '+G.newA:'')+' ›';
+  show('end',bg);
+  sfx('win');
+  if(acc>=50||isNew)confetti(['🌎','⭐','🎉','🏆','🔥','📍'],40);
+  paintHome();
+}
+
+/* ================= pantalla de logros / colección ================= */
+let TAB='gen',NEWMAP={};
+function medals(a){const c=ST.ach[a.id]||0;return[0,1,2].map(i=>i<c?MED[i]:'⚪').join('')}
+function achCard(a){
+  const c=ST.ach[a.id]||0,m=metric(a),done=c>=3,tg=done?a.th[2]:a.th[c],pct=done?100:Math.min(100,Math.round(m/tg*100));
+  const r=a.rw[done?2:c];
+  const el=document.createElement('div');el.className='ac';el.dataset.id=a.id;
+  const tiers=a.th.map((x,i)=>`<div class="${i<c?'done':''}">${MED[i]} ${achDesc(a,x)} → ${rewardText(a.rw[i])}</div>`).join('');
+  el.innerHTML=`<div class="ic">${a.ic}</div><div class="bd">
+    <div class="hd"><span class="nm">${achName(a)}${NEWMAP[a.id]?` <span style="color:var(--bad);font-size:12px">${t('new_tag')}</span>`:''}</span><span class="md">${medals(a)}</span></div>
+    <div class="ds">${achDesc(a,tg)}</div>
+    <div class="pbar"><i style="width:${pct}%"></i><span>${done?t('max'):Math.min(m,tg)+' / '+tg}</span></div>
+    <div class="rw">🎁 ${rewardText(r)}<small>${whyOf(r)}</small></div>
+    <div class="more">${tiers}</div></div>`;
+  return el;
+}
+function cell(txt,cls,act,v,extra){
+  const b=document.createElement('button');b.type='button';b.className='cell '+(cls||'');b.dataset.act=act;b.dataset.v=v;
+  b.innerHTML=txt+(extra||'');return b;
+}
+function renderAch(){
+  const L=lvlOf(ST.xp);
+  $('#lvAv').textContent=ST.av;$('#lvNm').textContent=ttlName();
+  const pc=Math.round((ST.xp-lvlThr(L))/(lvlThr(L+1)-lvlThr(L))*100);
+  $('#lvBar').style.width=pc+'%';$('#lvTx').textContent=t('level')+' '+L+' · '+(ST.xp-lvlThr(L))+'/'+(lvlThr(L+1)-lvlThr(L))+' XP';
+  $('#lvTt').textContent='';$('#lvJk').textContent='✂️ '+ST.jk;
+  $$('#tabs .tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===TAB));
+  const box=$('#alist');box.innerHTML='';
+  if(TAB==='gen'||TAB==='cat'){
+    const want=TAB==='gen'?'g':'c';
+    const done=ACH.filter(a=>a.grp===want&&(ST.ach[a.id]||0)>=3).length,all=ACH.filter(a=>a.grp===want).length;
+    const h=document.createElement('div');h.className='sec';h.textContent='🏅 '+done+'/'+all;box.appendChild(h);
+    ACH.filter(a=>a.grp===want).forEach(a=>box.appendChild(achCard(a)));
+  }else{
+    const sec=(title)=>{const h=document.createElement('div');h.className='sec';h.textContent=title;box.appendChild(h);const g=document.createElement('div');g.className='grid';box.appendChild(g);return g};
+    let g=sec(t('c_countries')+' '+ST.col.length+'/'+D.length);
+    D.forEach(d=>{const own=ST.col.includes(d.n);g.appendChild(cell(own?flag(d.n):'❓',own?'on':'lock','co',d.n))});
+    g=sec(t('c_avatars')+' '+ST.avs.length+'/'+AVATARS.length);
+    AVATARS.forEach(v=>{const own=ST.avs.includes(v);g.appendChild(cell(v,own?(ST.av===v?'on':''):'lock','av',v,own?'':'<span class="lk">🔒</span>'))});
+    g=sec(t('c_themes')+' '+ST.ths.length+'/'+THEMES.length);
+    THEMES.forEach(x=>{const own=ST.ths.includes(x.id);g.appendChild(cell(`<span class="sw" style="background:${x.c}"></span>`,own?(ST.th===x.id?'on':''):'lock','th',x.id,own?'':'<span class="lk">🔒</span>'))});
+    g=sec(t('c_titles'));
+    g.appendChild(cell(t('auto'),'wide '+(ST.tt==='auto'?'on':''),'tt','auto'));
+    ACH.forEach(a=>{const own=ST.ttl.includes(a.id);g.appendChild(cell(achName(a),'wide '+(own?(ST.tt===a.id?'on':''):'lock'),'tt',a.id,own?'':'<span class="lk">🔒</span>'))});
+    g=sec(t('c_modes'));
+    [['m50',t('mode50')],['topics',t('topics')]].forEach(([k,n])=>{const own=!!ST.unl[k];g.appendChild(cell((own?'✅ ':'🔒 ')+n,'mode '+(own?'on':'lock'),'un',k))});
+  }
+}
+function openAch(tab){
+  NEWMAP={};ACH.forEach(a=>{if((ST.ach[a.id]||0)>(ST.seen[a.id]||0))NEWMAP[a.id]=1;ST.seen[a.id]=ST.ach[a.id]||0});
+  save();paintBadges();
+  TAB=tab||TAB;show('ach');renderAch();$('#alist').scrollTop=0;
+}
+$('#alist').addEventListener('click',e=>{
+  const ac=e.target.closest('.ac');if(ac){ac.classList.toggle('open');return}
+  const c=e.target.closest('.cell');if(!c)return;
+  const act=c.dataset.act,v=c.dataset.v;
+  if(act==='co'){
+    if(ST.col.includes(v))toast(flag(v),tr(v),byName[v].cap?(LANG==='en'?'Capital: ':'Capital: ')+tr(byName[v].cap):'');
+    else toast('❓','???',t('collect_hint'));
+    sfx('click');return;
+  }
+  if(act==='av'){ if(ST.avs.includes(v))ST.av=v;else{toast('🔒',v,lockMsg('av',v));sfx('bad');return} }
+  if(act==='th'){ if(ST.ths.includes(v)){ST.th=v;setBg(homeBg())}else{toast('🔒',themeById(v)[LANG],lockMsg('th',v));sfx('bad');return} }
+  if(act==='tt'){ if(v==='auto'||ST.ttl.includes(v))ST.tt=v;else{toast('🔒','🏷️',lockMsg('tt',v));sfx('bad');return} }
+  if(act==='un'){ if(!ST.unl[v]){toast('🔒',v==='m50'?t('mode50'):t('topics'),lockMsg('unl',v));sfx('bad')}return }
+  sfx('click');save();renderAch();paintHome();
+});
+$$('#tabs .tab').forEach(b=>b.addEventListener('click',()=>{TAB=b.dataset.tab;sfx('click');renderAch();$('#alist').scrollTop=0}));
+
+/* ================= idioma: aplicar ================= */
+function applyLang(){
+  document.documentElement.lang=LANG;
+  document.title='GeoTrivia';
+  $$('[data-i]').forEach(el=>el.textContent=t(el.dataset.i));
+  $$('[data-ia]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.ia)));
+  $$('.langsw button').forEach(b=>b.classList.toggle('on',b.dataset.lang===LANG));
+  $('#btnHome2').textContent=t('home');$('#btnAgain').textContent=t('again');
+  if(!G||!$('#game').classList.contains('on'))$('#btnNext').textContent=t('choose');
+  paintHome();
+  if($('#ach').classList.contains('on'))renderAch();
+}
+$$('.langsw button').forEach(b=>b.addEventListener('click',()=>{LANG=b.dataset.lang;ls.set('geotrivia.lang',LANG);applyLang();sfx('click')}));
+
+/* ================= eventos ================= */
+$('#btnPlay').addEventListener('click',()=>{sfx('click');start()});
+$('#btnAgain').addEventListener('click',()=>{sfx('click');start()});
+$('#btnNext').addEventListener('click',()=>{if(G&&G.done){sfx('click');nextQ()}});
+$('#btnJoker').addEventListener('click',useJoker);
+function goHome(){sfx('click');timerStop();G=null;paintHome();show('home')}
+$('#btnHome').addEventListener('click',goHome);
+$('#btnHome2').addEventListener('click',goHome);
+$('#btnAch').addEventListener('click',()=>{sfx('click');openAch('gen')});
+$('#player').addEventListener('click',()=>{sfx('click');openAch('col')});
+$('#nextAch').addEventListener('click',()=>{const n=nextTarget();sfx('click');openAch(n&&n.a.grp==='c'?'cat':'gen')});
+$('#endGain').addEventListener('click',()=>{sfx('click');openAch('gen')});
+$('#btnBack').addEventListener('click',()=>{sfx('click');paintHome();show('home')});
+document.addEventListener('keydown',e=>{
+  if(!$('#game').classList.contains('on')||!G)return;
+  const k=e.key.toLowerCase(),i='1234'.indexOf(k)>=0&&k.length===1?+k-1:'abcd'.indexOf(k)>=0&&k.length===1?'abcd'.indexOf(k):-1;
+  if(i>=0&&!G.done){const b=$$('#opts .opt')[i];if(b&&!b.disabled)answer(b);return}
+  if((e.key==='Enter'||e.key===' ')&&G.done&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();nextQ()}
+});
+setBg(homeBg());
+applyLang();
+checkAch();save();
+window.__geo={G:()=>G,ST:()=>ST,makeQ,D,ACH,metric};
+})();
+</script>
+</body>
+</html>
